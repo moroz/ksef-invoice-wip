@@ -41,7 +41,7 @@ func main() {
 	}
 
 	authTokenRequest := BuildAuthTokenRequestFromChallenge(challenge, SampleNip)
-	output, err := xml.MarshalIndent(authTokenRequest, "", "  ")
+	output, err := xml.Marshal(authTokenRequest)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func main() {
 			Canonicalizer: canonicalizer,
 			Hash:          crypto.SHA256,
 		},
-		Canonicalizer: dsig.MakeC14N10RecCanonicalizer(),
+		Canonicalizer: canonicalizer,
 		Hash:          crypto.SHA256,
 		KeyStore:      *keyStore,
 	}
@@ -77,8 +77,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	request := xml.Header + string(b)
-	resp, err := client.SubmitAuthXadesSignature(request)
+	resp, err := client.SubmitAuthXadesSignature(string(b))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -100,7 +99,7 @@ func removeComments(elem *etree.Element) *etree.Element {
 			copy.RemoveChild(token)
 		}
 	}
-	for i, child := range elem.ChildElements() {
+	for i, child := range copy.ChildElements() {
 		copy.ChildElements()[i] = removeComments(child)
 	}
 	return copy
