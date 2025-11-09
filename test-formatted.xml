@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<AuthTokenRequest xmlns="http://ksef.mf.gov.pl/auth/token/2.0">
+  <Challenge>20251109-CR-07EE6D6000-FC4FBD377C-71</Challenge>
+  <ContextIdentifier>
+    <Nip>8976111986</Nip>
+  </ContextIdentifier>
+  <SubjectIdentifierType>certificateSubject</SubjectIdentifierType>
+  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#" Id="Signature">
+    <SignedInfo>
+      <CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+      <SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+      <Reference URI="">
+        <Transforms>
+          <Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+          <Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+        </Transforms>
+        <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+        <DigestValue>0QXR4QMCzOtEjdyWsTlAnR2axuLxXboafMKzOZL4z8o=</DigestValue>
+      </Reference>
+      <Reference URI="#SignedProperties" Type="http://uri.etsi.org/01903#SignedProperties">
+        <Transforms>
+          <Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+        </Transforms>
+        <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+        <DigestValue>wdZL25/OJUvQVYBLdz1BBElF275Vztpiigq8CkclxLc=</DigestValue>
+      </Reference>
+    </SignedInfo>
+    <SignatureValue>g3fqeduBYNABMQMs9Es8Q425Kr7QG+ZeONn3MjVj7KkoJgJPNp7j34K3qPMoW5Fi0J6TW/hAk/+Zyhp4dBrkkh12tA+FMb4RXPWF/oi36/YhdtWDK3mCUoCoaqwjcgFGTjmWgOeHN52n8qsxHt5hiVLjEiAEyWyYlUHhqllSoFA7eEQrVCeY70SKv4HIec0WawMCwB1RN1ChZYGgu7kpjwhxUTm3Fw/nKK57gNxsEW5Dq6O6Qg2snKrAJN57i1V0v25rCIg+DbkP+6uzKtsN6FfI6dUGE6F0aeOMCON2GIP8z4VVe57kxgMEieS5ngNSYd0aljznngifnYxzkX+4paOQlPxZ89rR8UWkaCjJmYsC0JUN1BQnaj+NAATX09DU/C0SQsQ+TLGBdKict5w5XgMBkNdIucMLFsZ0xCCdX+1kipHPMH5w6x5gdpwlwoYuxCYhNTfVAFOp6kExWzgs4e6bHvicq60yLKzDfONogg5uyKyX53JfwTXyKO5JE9KhIjbWur9lHHujqDecORX1sFU3lyEWNo9UMAN+R8vT8jSEo2P2BRT3LniGIEf4xLz29h9+tw2M7KJ1A9d+T7WZhQZjv3BuCtfuM5sp6VUeJRbhYqu0FZIdXibNu5n3+yxnm19mxAgYkpMOJWAOslyw4hsC25cuC7gjbGChb7Fr6Pk=</SignatureValue>
+    <KeyInfo>
+      <X509Data>
+        <X509Certificate>MIIFajCCA1KgAwIBAgIQBGbAl7/MGQnHUq4VeUC3KDANBgkqhkiG9w0BAQsFADBgMQswCQYDVQQGEwJQTDEVMBMGA1UEAxMMSkFOIEtPV0FMU0tJMRkwFwYDVQQFExBUSU5QTC04OTc2MTExOTg2MQwwCgYDVQQqEwNKQU4xETAPBgNVBAQTCEtPV0FMU0tJMB4XDTI1MTEwOTAxMTczNFoXDTI3MTEwOTAyMTgzNFowYDELMAkGA1UEBhMCUEwxFTATBgNVBAMTDEpBTiBLT1dBTFNLSTEZMBcGA1UEBRMQVElOUEwtODk3NjExMTk4NjEMMAoGA1UEKhMDSkFOMREwDwYDVQQEEwhLT1dBTFNLSTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAMejxTYtxpGRU7nyf4VT/s7Z1tQ64VT+J7p1T+zFLyaLPblvtZw6qE3Fh2digvCUmDJeyd5AV2iM5bTL0sg9baCpRaQu2txmTK5tbv7D7tbSsAzDo1bjp61yRasLO2yNH5rSoqIhOnDT2ksK3ilvW6pGEy9T1RXliwhYPVX6WhmDdwDLASV/5hcPGl0Lx8Vbo8ov7dZOo9ujOzrPrPtYOqTXp2bJPqStlsb7YsB2yBA60gqeyHWIaiXpa4d2WecdDiBJr2n3LIYKvA4pmKSrHKdzYFytmYQRLLdWnwR0zpwMYKrrXeEe8IIqWfAlUOqrakaaeFdS1/nLBH9VxlgK7djw5f2QyPU3qP1d5UbJuroIqkACzQlffom8uLcSOjdH1GNkwdO4fcDW6Mqh5aVKvZp4Ut3xqsv0FBmFn9+yMbVEFZ1k5t1D+XLTbpMce1c6oE8FAqJHQnqfGZ4+gHMfIXIZt9OhPQYyS11yklDe4qEvkfwddGiO4zhc/zalaU9z89T9Y2SAtH84gOByOf2/DigdXj4DewhQQZC3V1IgOyMmc/kDzLKd9Ba3f7chzDPpmTt9k40yrpg1tYm3LHkbswZ0HghV3tXHNEzMODOziO5nYqisAfC3QqNjqCseZm+pScyycZaSZ56GBKV5A5zM/FTZKMpHYM8zUCdNFcQ1eF9fAgMBAAGjIDAeMA4GA1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4ICAQBmiZH1p76pYjZ7VkgAdRkAgqqoQuAFqXJkI9Z+Csy7ux9zdVZk3F4bdG1EQ3JY52uS1FFkyTgARxEYU9/6fxyIjSaK0XAa01Mw+6JpGN46hp2AxTL+nGYXSG83jgBK9gpLSz6MV9UZsJ2u70+w6/5ZAzJ1bmm0ZNrZ9K/OInCrjGIS7O2VRXBx4E9bEbY+IWO7PS3HEeQdcillRm5G8jy5Kb6lxtCRpiMef2MAuKhh8L2imdtsdT2Jji8Rdm/mFgqAH+DA8hddy23nXkKMmLbVeK3eSxS/IIiQbvvxzLyeuV7My8tOThEP2AThJXNIIl+XVWvujZA2Y43QNbhJ3FMIXlmnNx8cOaBSJO+9uVw4QG5gpYLBhkLi6zPXQOQjNoYhdR3JNDD/xQEA3Aa+dmghbz2tZ3NoGYc7RysYGwWYxgsZkLhRz5UQ6lNQeSdcY7Hh/JEC6GGyUg7c7YQirYi7vg1+8jzJoMbrKrzcMvBVKXyaIKDJqcAj7BQhhUmPEUH0ZuGubZJFHFPonRBiUgNvX8+/HWbA7lhuqwgcRKkmss5ZpAkOUs/D3q2fD45qEmLuYCrw+aDTBRQyjzZiSNTRKf0V8GQmQBBDL8r5WRCoxYGDfqIgpBCIC/+2mieMr12CzKXTwRVgA+ybcAc8OwNwcOSU+dlVSnzjsUl09qeKPw==</X509Certificate>
+      </X509Data>
+    </KeyInfo>
+    <Object>
+      <xades:QualifyingProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Target="#Signature">
+        <xades:SignedProperties Id="SignedProperties">
+          <xades:SignedSignatureProperties>
+            <xades:SigningTime>2025-11-09T10:18:36Z</xades:SigningTime>
+            <xades:SigningCertificate>
+              <xades:Cert>
+                <xades:CertDigest>
+                  <DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+                  <DigestValue>04Hrl8RZJSpEPjk/hqQbfqckcyQ=</DigestValue>
+                </xades:CertDigest>
+                <xades:IssuerSerial>
+                  <X509IssuerName>SERIALNUMBER=TINPL-8976111986,CN=JAN KOWALSKI,C=PL,2.5.4.4=#13084b4f57414c534b49,2.5.4.42=#13034a414e</X509IssuerName>
+                  <X509SerialNumber>5850432508165032666985507815564556072</X509SerialNumber>
+                </xades:IssuerSerial>
+              </xades:Cert>
+            </xades:SigningCertificate>
+          </xades:SignedSignatureProperties>
+        </xades:SignedProperties>
+      </xades:QualifyingProperties>
+    </Object>
+  </Signature>
+</AuthTokenRequest>

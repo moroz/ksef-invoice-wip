@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"net/http"
@@ -13,6 +14,7 @@ type KSeFClient struct {
 }
 
 const GetAuthEndpoint = "/auth/challenge"
+const SubmitAuthXadesSignatureEndpoint = "/auth/xades-signature"
 
 type AuthChallengeResult struct {
 	Challenge string
@@ -60,4 +62,14 @@ func BuildAuthTokenRequestFromChallenge(challenge *AuthChallengeResult, nip stri
 		},
 		SubjectIdentifierType: "certificateSubject",
 	}
+}
+
+func (c *KSeFClient) SubmitAuthXadesSignature(xmlString string) (*http.Response, error) {
+	body := bytes.NewBufferString(xmlString)
+	req, err := http.NewRequest("POST", BaseUrl+SubmitAuthXadesSignatureEndpoint, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/xml")
+	return http.DefaultClient.Do(req)
 }
