@@ -1,4 +1,4 @@
-package main
+package certs
 
 import (
 	"crypto/ecdsa"

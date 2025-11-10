@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"ksef-go/lib/certs"
 
 	xades "github.com/artemkunich/goxades"
 	"github.com/beevik/etree"
@@ -17,7 +18,7 @@ import (
 const SampleNip = "8976111986"
 
 func main() {
-	der, key, err := GenerateSelfSignedRSACertificate(SampleNip)
+	der, key, err := certs.GenerateSelfSignedRSACertificate(SampleNip)
 	if err != nil {
 		log.Fatal(err)
 	}
