@@ -97,10 +97,6 @@ type SignatureValue struct {
 	Value   string   `xml:",chardata"`
 }
 
-type ecdsaSignature struct {
-	R, S *big.Int
-}
-
 func SerializeSignatureXMLDSig(r, s *big.Int) string {
 	// For P-256 (secp256r1), R and S should each be 32 bytes
 	rBytes := r.Bytes()
@@ -114,25 +110,8 @@ func SerializeSignatureXMLDSig(r, s *big.Int) string {
 	return base64.StdEncoding.EncodeToString(signature)
 }
 
-func main() {
-	der, key, err := certs.GenerateSelfSignedCertificate(SampleNip)
-
-	excC14N := dsig.MakeC14N10ExclusiveCanonicalizerWithPrefixList("")
-
-	doc := etree.NewDocument()
-	if err := doc.ReadFromString(example); err != nil {
-		log.Fatal(err)
-	}
-
-	canonical, err := excC14N.Canonicalize(doc.Root())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	digestBytes := sha256.Sum256(canonical)
-	digestValue := base64.StdEncoding.EncodeToString(digestBytes[:])
-
-	sig := &Signature{
+func BuildSignatureTemplate(certDer []byte) *Signature {
+	return &Signature{
 		ID: "Signature",
 		SignedInfo: SignedInfo{
 			CanonicalizationMethod: CanonicalizationMethod{
@@ -155,48 +134,90 @@ func main() {
 				DigestMethod: DigestMethod{
 					Algorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
 				},
-				DigestValue: digestValue,
 			},
 		},
 		SignatureValue: SignatureValue{},
 		KeyInfo: KeyInfo{X509Data: X509Data{
 			X509Certificates: []X509Certificate{
 				{
-					Value: base64.StdEncoding.EncodeToString(der),
+					Value: base64.StdEncoding.EncodeToString(certDer),
 				},
 			},
 		}},
 	}
+}
 
-	serializedSig, err := xml.Marshal(sig)
-	sigNode := etree.NewDocument()
-	if err := sigNode.ReadFromBytes(serializedSig); err != nil {
-		log.Fatal(err)
+func MarshalToEtreeDocument(object any) (*etree.Document, error) {
+	bytes, err := xml.Marshal(object)
+	if err != nil {
+		return nil, err
 	}
 
-	signedInfo := sigNode.Root().FindElements("./SignedInfo")
-	canonical, err = excC14N.Canonicalize(signedInfo[0])
+	doc := etree.NewDocument()
+	if err := doc.ReadFromBytes(bytes); err != nil {
+		return nil, err
+	}
+	return doc, nil
+}
+
+func calculateSignature(template *Signature, key *ecdsa.PrivateKey, c14n dsig.Canonicalizer) (*big.Int, *big.Int, error) {
+	document, err := MarshalToEtreeDocument(template)
 	if err != nil {
-		log.Fatal(err)
+		return nil, nil, err
+	}
+
+	signedInfo := document.Root().FindElements("./SignedInfo")
+	canonical, err := c14n.Canonicalize(signedInfo[0])
+	if err != nil {
+		return nil, nil, err
 	}
 
 	signedInfoHash := sha256.Sum256(canonical)
-	r, s, err := ecdsa.Sign(rand.Reader, key, signedInfoHash[:])
+	return ecdsa.Sign(rand.Reader, key, signedInfoHash[:])
+}
+
+func BuildXMLSignature(xmlString string, key *ecdsa.PrivateKey, certDer []byte) ([]byte, error) {
+	c14n := dsig.MakeC14N10ExclusiveCanonicalizerWithPrefixList("")
+
+	doc := etree.NewDocument()
+	if err := doc.ReadFromString(xmlString); err != nil {
+		return nil, err
+	}
+
+	canonicalRoot, err := c14n.Canonicalize(doc.Root())
 	if err != nil {
+		return nil, err
+	}
+
+	digestBytes := sha256.Sum256(canonicalRoot)
+
+	signature := BuildSignatureTemplate(certDer)
+	signature.SignedInfo.Reference.DigestValue = base64.StdEncoding.EncodeToString(digestBytes[:])
+
+	r, s, err := calculateSignature(signature, key, c14n)
+	if err != nil {
+		return nil, err
+	}
+	signature.SignatureValue.Value = SerializeSignatureXMLDSig(r, s)
+	return xml.Marshal(signature)
+}
+
+func main() {
+	der, key, err := certs.GenerateSelfSignedCertificate(SampleNip)
+	doc := etree.NewDocument()
+	if err := doc.ReadFromString(example); err != nil {
 		log.Fatal(err)
 	}
 
-	sig.SignatureValue.Value = SerializeSignatureXMLDSig(r, s)
-
-	serialized, err := xml.Marshal(sig)
-	sigNode = etree.NewDocument()
-	if err := sigNode.ReadFromBytes(serialized); err != nil {
+	signature, err := BuildXMLSignature(example, key, der)
+	sigNode := etree.NewDocument()
+	if err := sigNode.ReadFromBytes(signature); err != nil {
 		log.Fatal(err)
 	}
 
 	doc.Root().AddChild(sigNode.Root())
 
-	canonical, err = canonicalSerialize(doc.Root())
+	canonical, err := canonicalSerialize(doc.Root())
 	if err != nil {
 		log.Fatal(err)
 	}
