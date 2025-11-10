@@ -28,11 +28,25 @@ type Signature struct {
 
 	SignedInfo     SignedInfo     `xml:"SignedInfo"`
 	SignatureValue SignatureValue `xml:"SignatureValue"`
+	KeyInfo        KeyInfo        `xml:"KeyInfo"`
+}
+
+type KeyInfo struct {
+	X509Data X509Data `xml:"X509Data"`
+}
+
+type X509Data struct {
+	X509Certificates []X509Certificate `xml:"X509Certificate"`
+}
+
+type X509Certificate struct {
+	XMLName xml.Name `xml:"X509Certificate"`
+	Value   string   `xml:",chardata"`
 }
 
 // SignedInfo contains the canonicalization method, signature method, and references
 type SignedInfo struct {
-	XMLName                xml.Name               `xml:"SignedInfo"`
+	XMLName                xml.Name               `xml:"http://www.w3.org/2000/09/xmldsig# SignedInfo"`
 	CanonicalizationMethod CanonicalizationMethod `xml:"CanonicalizationMethod"`
 	SignatureMethod        SignatureMethod        `xml:"SignatureMethod"`
 	Reference              Reference              `xml:"Reference"`
@@ -83,15 +97,25 @@ type SignatureValue struct {
 	Value   string   `xml:",chardata"`
 }
 
-func SerializeSignature(key *ecdsa.PrivateKey, r, s *big.Int) []byte {
-	byteCount := (key.Curve.Params().BitSize + 7) / 8
-	rBytes := r.FillBytes(make([]byte, byteCount))
-	sBytes := r.FillBytes(make([]byte, byteCount))
-	return append(rBytes, sBytes...)
+type ecdsaSignature struct {
+	R, S *big.Int
+}
+
+func SerializeSignatureXMLDSig(r, s *big.Int) string {
+	// For P-256 (secp256r1), R and S should each be 32 bytes
+	rBytes := r.Bytes()
+	sBytes := s.Bytes()
+
+	// Pad to 32 bytes if needed
+	signature := make([]byte, 64)
+	copy(signature[32-len(rBytes):32], rBytes)
+	copy(signature[64-len(sBytes):64], sBytes)
+
+	return base64.StdEncoding.EncodeToString(signature)
 }
 
 func main() {
-	_, key, err := certs.GenerateSelfSignedCertificate(SampleNip)
+	der, key, err := certs.GenerateSelfSignedCertificate(SampleNip)
 
 	excC14N := dsig.MakeC14N10ExclusiveCanonicalizerWithPrefixList("")
 
@@ -112,7 +136,7 @@ func main() {
 		ID: "Signature",
 		SignedInfo: SignedInfo{
 			CanonicalizationMethod: CanonicalizationMethod{
-				Algorithm: "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
+				Algorithm: "http://www.w3.org/2001/10/xml-exc-c14n#",
 			},
 			SignatureMethod: SignatureMethod{
 				Algorithm: "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256",
@@ -135,19 +159,23 @@ func main() {
 			},
 		},
 		SignatureValue: SignatureValue{},
+		KeyInfo: KeyInfo{X509Data: X509Data{
+			X509Certificates: []X509Certificate{
+				{
+					Value: base64.StdEncoding.EncodeToString(der),
+				},
+			},
+		}},
 	}
 
-	signedInfoXml, err := xml.Marshal(sig.SignedInfo)
-	if err != nil {
+	serializedSig, err := xml.Marshal(sig)
+	sigNode := etree.NewDocument()
+	if err := sigNode.ReadFromBytes(serializedSig); err != nil {
 		log.Fatal(err)
 	}
 
-	parsedSignedInfo := etree.NewDocument()
-	if err := parsedSignedInfo.ReadFromBytes(signedInfoXml); err != nil {
-		log.Fatal(err)
-	}
-
-	canonical, err = dsig.MakeC14N10RecCanonicalizer().Canonicalize(parsedSignedInfo.Root())
+	signedInfo := sigNode.Root().FindElements("./SignedInfo")
+	canonical, err = excC14N.Canonicalize(signedInfo[0])
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -157,12 +185,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	signatureBytes := SerializeSignature(key, r, s)
 
-	sig.SignatureValue.Value = base64.StdEncoding.EncodeToString(signatureBytes)
+	sig.SignatureValue.Value = SerializeSignatureXMLDSig(r, s)
 
 	serialized, err := xml.Marshal(sig)
-	sigNode := etree.NewDocument()
+	sigNode = etree.NewDocument()
 	if err := sigNode.ReadFromBytes(serialized); err != nil {
 		log.Fatal(err)
 	}
