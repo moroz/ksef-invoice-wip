@@ -8,6 +8,7 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"encoding/xml"
+	"fmt"
 	"ksef-go/lib/certs"
 	"log"
 	"math/big"
@@ -52,7 +53,7 @@ type SignedInfo struct {
 	XMLName                xml.Name               `xml:"http://www.w3.org/2000/09/xmldsig# SignedInfo"`
 	CanonicalizationMethod CanonicalizationMethod `xml:"CanonicalizationMethod"`
 	SignatureMethod        SignatureMethod        `xml:"SignatureMethod"`
-	Reference              Reference              `xml:"Reference"`
+	Reference              []Reference            `xml:"Reference"`
 }
 
 // CanonicalizationMethod specifies the canonicalization algorithm
@@ -71,6 +72,7 @@ type SignatureMethod struct {
 type Reference struct {
 	XMLName      xml.Name     `xml:"Reference"`
 	URI          string       `xml:"URI,attr"`
+	Type         string       `xml:"Type,attr,omitempty"`
 	Transforms   Transforms   `xml:"Transforms"`
 	DigestMethod DigestMethod `xml:"DigestMethod"`
 	DigestValue  string       `xml:"DigestValue"`
@@ -166,18 +168,16 @@ func buildSigningCertificateInfo(certDer []byte) (*XAdESSigningCertificate, erro
 		return nil, err
 	}
 
-	hash := sha256.Sum256(certDer)
-
-	digest := XAdESCertDigest{
-		DigestMethod: DigestMethod{
-			Algorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
-		},
-		DigestValue: base64.StdEncoding.EncodeToString(hash[:]),
-	}
+	certHash := sha256.Sum256(certDer)
 
 	return &XAdESSigningCertificate{
 		Cert: XAdESCert{
-			CertDigest: digest,
+			CertDigest: XAdESCertDigest{
+				DigestMethod: DigestMethod{
+					Algorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
+				},
+				DigestValue: base64.StdEncoding.EncodeToString(certHash[:]),
+			},
 			IssuerSerial: XAdESIssuerSerial{
 				X509IssuerName:   cert.Issuer.String(),
 				X509SerialNumber: cert.SerialNumber.String(),
@@ -201,19 +201,35 @@ func BuildSignatureTemplate(certDer []byte) (*Signature, error) {
 			SignatureMethod: SignatureMethod{
 				Algorithm: "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256",
 			},
-			Reference: Reference{
-				Transforms: Transforms{
-					Transform: []Transform{
-						{
-							Algorithm: "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
-						},
-						{
-							Algorithm: "http://www.w3.org/2001/10/xml-exc-c14n#",
+			Reference: []Reference{
+				{
+					Transforms: Transforms{
+						Transform: []Transform{
+							{
+								Algorithm: "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+							},
+							{
+								Algorithm: "http://www.w3.org/2001/10/xml-exc-c14n#",
+							},
 						},
 					},
+					DigestMethod: DigestMethod{
+						Algorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
+					},
 				},
-				DigestMethod: DigestMethod{
-					Algorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
+				{
+					URI:  "#SignedProperties",
+					Type: "http://uri.etsi.org/01903#SignedProperties",
+					Transforms: Transforms{
+						Transform: []Transform{
+							{
+								Algorithm: "http://www.w3.org/2001/10/xml-exc-c14n#",
+							},
+						},
+					},
+					DigestMethod: DigestMethod{
+						Algorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
+					},
 				},
 			},
 		},
@@ -254,20 +270,67 @@ func MarshalToEtreeDocument(object any) (*etree.Document, error) {
 	return doc, nil
 }
 
-func calculateSignature(template *Signature, key *ecdsa.PrivateKey, c14n dsig.Canonicalizer) (*big.Int, *big.Int, error) {
+func calculateDigest(template *Signature, path string, c14n dsig.Canonicalizer) ([]byte, error) {
 	document, err := MarshalToEtreeDocument(template)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	signedInfo := document.Root().FindElements("./SignedInfo")
-	canonical, err := c14n.Canonicalize(signedInfo[0])
+	element := document.Root().FindElement(path)
+	if element == nil {
+		return nil, fmt.Errorf("calculateDigest: element with path %s not found in root", path)
+	}
+
+	canonical, err := c14n.Canonicalize(element)
+	if err != nil {
+		return nil, err
+	}
+
+	//fmt.Println(string(canonical))
+
+	digest := sha256.Sum256(canonical)
+
+	return digest[:], nil
+}
+
+func calculateSignature(template *Signature, path string, key *ecdsa.PrivateKey, c14n dsig.Canonicalizer) (*big.Int, *big.Int, error) {
+	digest, err := calculateDigest(template, path, c14n)
 	if err != nil {
 		return nil, nil, err
 	}
+	return ecdsa.Sign(rand.Reader, key, digest)
+}
 
-	signedInfoHash := sha256.Sum256(canonical)
-	return ecdsa.Sign(rand.Reader, key, signedInfoHash[:])
+func buildQualifiedSignedProperties(signedProperties *etree.Element) *etree.Element {
+	qualifiedSignedProperties := signedProperties.Copy()
+	qualifiedSignedProperties.Attr = append(
+		signedProperties.Attr,
+		etree.Attr{Space: "xmlns", Key: "", Value: dsig.Namespace},
+		etree.Attr{Space: "xmlns", Key: "xades", Value: "http://uri.etsi.org/01903/v1.3.2#"},
+	)
+	return qualifiedSignedProperties
+}
+
+func calculateSignedPropertiesDigest(signature *Signature, c14n dsig.Canonicalizer) ([]byte, error) {
+	doc, err := MarshalToEtreeDocument(signature)
+	if err != nil {
+		return nil, err
+	}
+
+	element := doc.Root().FindElement(".//[@Id='SignedProperties']")
+	if element == nil {
+		return nil, fmt.Errorf("SignedProperties element not found")
+	}
+
+	qualified := buildQualifiedSignedProperties(element)
+
+	canonical, err := c14n.Canonicalize(qualified)
+	if err != nil {
+		return nil, err
+	}
+
+	digest := sha256.Sum256(canonical)
+	return digest[:], nil
 }
 
 func BuildXMLSignature(xmlString string, key *ecdsa.PrivateKey, certDer []byte) ([]byte, error) {
@@ -289,9 +352,15 @@ func BuildXMLSignature(xmlString string, key *ecdsa.PrivateKey, certDer []byte) 
 	if err != nil {
 		return nil, err
 	}
-	signature.SignedInfo.Reference.DigestValue = base64.StdEncoding.EncodeToString(digestBytes[:])
+	signature.SignedInfo.Reference[0].DigestValue = base64.StdEncoding.EncodeToString(digestBytes[:])
 
-	r, s, err := calculateSignature(signature, key, c14n)
+	signedInfoDigest, err := calculateSignedPropertiesDigest(signature, c14n)
+	if err != nil {
+		return nil, err
+	}
+	signature.SignedInfo.Reference[1].DigestValue = base64.StdEncoding.EncodeToString(signedInfoDigest)
+
+	r, s, err := calculateSignature(signature, "./SignedInfo", key, c14n)
 	if err != nil {
 		return nil, err
 	}
@@ -307,6 +376,9 @@ func main() {
 	}
 
 	signature, err := BuildXMLSignature(example, key, der)
+	if err != nil {
+		log.Fatal(err)
+	}
 	sigNode := etree.NewDocument()
 	if err := sigNode.ReadFromBytes(signature); err != nil {
 		log.Fatal(err)
