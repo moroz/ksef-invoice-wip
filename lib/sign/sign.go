@@ -50,7 +50,7 @@ func buildSigningCertificateInfo(certDer []byte) (*XAdESSigningCertificate, erro
 	}, nil
 }
 
-func BuildSignatureTemplate(certDer []byte) (*Signature, error) {
+func buildSignatureTemplate(certDer []byte) (*Signature, error) {
 	certInfo, err := buildSigningCertificateInfo(certDer)
 	if err != nil {
 		return nil, err
@@ -121,13 +121,8 @@ func BuildSignatureTemplate(certDer []byte) (*Signature, error) {
 	}, nil
 }
 
-func BuildXMLSignature(xmlString string, key *ecdsa.PrivateKey, certDer []byte) ([]byte, error) {
+func BuildXMLSignature(doc *etree.Document, key *ecdsa.PrivateKey, certDer []byte) (*Signature, error) {
 	c14n := dsig.MakeC14N10ExclusiveCanonicalizerWithPrefixList("")
-
-	doc := etree.NewDocument()
-	if err := doc.ReadFromString(xmlString); err != nil {
-		return nil, err
-	}
 
 	canonicalRoot, err := c14n.Canonicalize(doc.Root())
 	if err != nil {
@@ -136,7 +131,7 @@ func BuildXMLSignature(xmlString string, key *ecdsa.PrivateKey, certDer []byte) 
 
 	digestBytes := sha256.Sum256(canonicalRoot)
 
-	signature, err := BuildSignatureTemplate(certDer)
+	signature, err := buildSignatureTemplate(certDer)
 	if err != nil {
 		return nil, err
 	}
@@ -153,26 +148,35 @@ func BuildXMLSignature(xmlString string, key *ecdsa.PrivateKey, certDer []byte) 
 		return nil, err
 	}
 	signature.SignatureValue.Value = SerializeSignatureXMLDSig(r, s)
-	return xml.Marshal(signature)
+	return signature, nil
 }
 
-func SignXML(xmlString string, key *ecdsa.PrivateKey, certDer []byte) (result []byte, err error) {
+func SignXML(xmlBytes []byte, key *ecdsa.PrivateKey, certDer []byte) (result []byte, err error) {
 	doc := etree.NewDocument()
-	if err = doc.ReadFromString(xmlString); err != nil {
+	if err = doc.ReadFromBytes(xmlBytes); err != nil {
 		return
 	}
 
-	signature, err := BuildXMLSignature(xmlString, key, certDer)
+	signature, err := BuildXMLSignature(doc, key, certDer)
 	if err != nil {
 		return
 	}
 
-	sigNode := etree.NewDocument()
-	if err = sigNode.ReadFromBytes(signature); err != nil {
+	sigNode, err := MarshalToEtreeDocument(signature)
+	if err != nil {
 		return
 	}
 
 	doc.Root().AddChild(sigNode.Root())
 
 	return CanonicalSerialize(doc.Root())
+}
+
+func MarshalAndSign(v any, key *ecdsa.PrivateKey, certDer []byte) (result []byte, err error) {
+	xmlBytes, err := xml.Marshal(v)
+	if err != nil {
+		return
+	}
+
+	return SignXML(xmlBytes, key, certDer)
 }

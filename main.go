@@ -1,12 +1,8 @@
 package main
 
 import (
-	"encoding/xml"
-	"fmt"
-	"io"
 	"ksef-go/lib/certs"
-	"ksef-go/lib/sign"
-
+	"ksef-go/lib/ksef"
 	"log"
 )
 
@@ -18,30 +14,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	client := &KSeFClient{}
+	client := ksef.NewClient(SampleNip, der, key)
 
-	challenge, err := client.GetAuthChallenge()
-	if err != nil {
+	if err := client.Authenticate(); err != nil {
 		log.Fatal(err)
 	}
 
-	authTokenRequest := BuildAuthTokenRequestFromChallenge(challenge, SampleNip)
-	xmlToSign, err := xml.Marshal(authTokenRequest)
-	if err != nil {
-		log.Fatal(err)
+	if client.Authenticated() {
+		log.Print("Authenticated!")
 	}
-
-	signed, err := sign.SignXML(string(xmlToSign), key, der)
-	resp, err := client.SubmitAuthXadesSignature(string(signed))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	result, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(string(result))
 }

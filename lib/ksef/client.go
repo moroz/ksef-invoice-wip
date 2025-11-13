@@ -1,0 +1,174 @@
+package ksef
+
+import (
+	"bytes"
+	"crypto/ecdsa"
+	"encoding/json"
+	"fmt"
+	"ksef-go/lib/sign"
+	"log"
+	"net/http"
+	"strings"
+	"time"
+)
+
+const BaseUrl = "https://ksef-test.mf.gov.pl/api/v2"
+
+type Client struct {
+	certDer               []byte
+	privKey               *ecdsa.PrivateKey
+	nip                   string
+	accessToken           *string
+	refreshToken          *string
+	accessTokenValidUntil *time.Time
+}
+
+func NewClient(nip string, certDer []byte, key *ecdsa.PrivateKey) *Client {
+	return &Client{certDer: certDer, privKey: key, nip: nip}
+}
+
+const GetAuthEndpoint = "/auth/challenge"
+const SubmitAuthXAdESSignatureEndpoint = "/auth/xades-signature"
+const RedeemAuthTokenEndpoint = "/auth/token/redeem"
+const CheckAuthenticationStatusEndpoint = "/auth/{ref}"
+
+func (c *Client) Authenticated() bool {
+	return c.accessToken != nil
+}
+
+func (c *Client) Authenticate() (err error) {
+	challenge, err := c.GetAuthChallenge()
+	if err != nil {
+		return
+	}
+
+	authTokenRequest := BuildAuthTokenRequestFromChallenge(challenge, c.nip)
+	signed, err := sign.MarshalAndSign(authTokenRequest, c.privKey, c.certDer)
+	if err != nil {
+		return
+	}
+
+	xadesResp, err := c.SubmitAuthXAdESSignature(signed)
+	if err != nil {
+		return
+	}
+
+	err = c.AwaitAuthorization(xadesResp.ReferenceNumber, xadesResp.AuthenticationToken.Token)
+	if err != nil {
+		return
+	}
+
+	tokenResp, err := c.RedeemAuthToken(xadesResp.AuthenticationToken.Token)
+	if err != nil {
+		return
+	}
+
+	c.accessToken = &tokenResp.AccessToken.Token
+	c.refreshToken = &tokenResp.RefreshToken.Token
+	c.accessTokenValidUntil = &tokenResp.AccessToken.ValidUntil
+	return
+}
+
+func (c *Client) GetAuthChallenge() (*AuthChallengeResult, error) {
+	req, err := http.NewRequest("POST", BaseUrl+GetAuthEndpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result AuthChallengeResult
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	return &result, err
+}
+
+func (c *Client) CheckAuthenticationStatus(ref, token string) (*CheckAuthenticationStatusResponse, error) {
+	url := BaseUrl + strings.ReplaceAll(CheckAuthenticationStatusEndpoint, "{ref}", ref)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("CheckAuthenticationStatus: unexpected status code (want %v, got %v)", 200, resp.StatusCode)
+	}
+
+	var result CheckAuthenticationStatusResponse
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	return &result, err
+}
+
+func (c *Client) AwaitAuthorization(ref, token string) (err error) {
+	for i := range 10 {
+		log.Printf("Awaiting authorization (attempt %v)", i)
+		resp, err := c.CheckAuthenticationStatus(ref, token)
+		if err == nil && resp.Status.Code == 200 {
+			return nil
+		}
+		time.Sleep(time.Second)
+	}
+	return
+}
+
+func (c *Client) RedeemAuthToken(bearer string) (*RedeemAuthTokenResponse, error) {
+	req, err := http.NewRequest("POST", BaseUrl+RedeemAuthTokenEndpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+bearer)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("RedeemAuthToken: unexpected status code (want %v, got %v)", 200, resp.StatusCode)
+	}
+
+	var result RedeemAuthTokenResponse
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	return &result, err
+}
+
+func BuildAuthTokenRequestFromChallenge(challenge *AuthChallengeResult, nip string) AuthTokenRequest {
+	return AuthTokenRequest{
+		XmlnsXsi:  "http://www.w3.org/2001/XMLSchema-instance",
+		XmlnsXsd:  "http://www.w3.org/2001/XMLSchema",
+		Challenge: challenge.Challenge,
+		ContextIdentifier: ContextIdentifier{
+			Nip: nip,
+		},
+		SubjectIdentifierType: "certificateSubject",
+	}
+}
+
+func (c *Client) SubmitAuthXAdESSignature(xmlBytes []byte) (*SubmitAuthXAdESSignatureResponse, error) {
+	body := bytes.NewBuffer(xmlBytes)
+	req, err := http.NewRequest("POST", BaseUrl+SubmitAuthXAdESSignatureEndpoint, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/xml")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 202 {
+		return nil, fmt.Errorf("SubmitAuthXAdESSignature: unexpected status code (want %v, got %v)", 202, resp.StatusCode)
+	}
+
+	var result SubmitAuthXAdESSignatureResponse
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	return &result, err
+}
