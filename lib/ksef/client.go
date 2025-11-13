@@ -13,6 +13,8 @@ import (
 )
 
 type Client struct {
+	env                   Environment
+	baseUrl               string
 	certDer               []byte
 	privKey               *ecdsa.PrivateKey
 	nip                   string
@@ -21,8 +23,21 @@ type Client struct {
 	accessTokenValidUntil *time.Time
 }
 
-func NewClient(nip string, certDer []byte, key *ecdsa.PrivateKey) *Client {
-	return &Client{certDer: certDer, privKey: key, nip: nip}
+func NewClient(env Environment, nip string, certDer []byte, key *ecdsa.PrivateKey) (*Client, error) {
+	client := &Client{certDer: certDer, privKey: key, nip: nip, env: env}
+
+	switch env {
+	case Environment_Test:
+		client.baseUrl = BaseUrl_Test
+	case Environment_PreProd:
+		client.baseUrl = BaseUrl_PreProd
+	case Envoronment_Prod:
+		client.baseUrl = BaseUrl_Prod
+	default:
+		return nil, fmt.Errorf("unknown environment %v", env)
+	}
+
+	return client, nil
 }
 
 func (c *Client) Authenticated() bool {

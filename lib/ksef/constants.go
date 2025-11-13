@@ -15,3 +15,4 @@ const (
 
 const BaseUrl_Test = "https://ksef-test.mf.gov.pl/api/v2"
 const BaseUrl_PreProd = "https://ksef-demo.mf.gov.pl/api/v2"
+const BaseUrl_Prod = "https://ksef.mf.gov.pl/api/v2"
