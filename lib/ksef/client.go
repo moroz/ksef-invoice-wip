@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-const BaseUrl = "https://ksef-test.mf.gov.pl/api/v2"
-
 type Client struct {
 	certDer               []byte
 	privKey               *ecdsa.PrivateKey
@@ -26,11 +24,6 @@ type Client struct {
 func NewClient(nip string, certDer []byte, key *ecdsa.PrivateKey) *Client {
 	return &Client{certDer: certDer, privKey: key, nip: nip}
 }
-
-const GetAuthEndpoint = "/auth/challenge"
-const SubmitAuthXAdESSignatureEndpoint = "/auth/xades-signature"
-const RedeemAuthTokenEndpoint = "/auth/token/redeem"
-const CheckAuthenticationStatusEndpoint = "/auth/{ref}"
 
 func (c *Client) Authenticated() bool {
 	return c.accessToken != nil
