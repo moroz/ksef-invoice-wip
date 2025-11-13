@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/x509"
 	_ "embed"
 	"encoding/base64"
 	"encoding/xml"
@@ -11,6 +12,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"time"
 
 	"github.com/beevik/etree"
 	dsig "github.com/russellhaering/goxmldsig"
@@ -29,6 +31,7 @@ type Signature struct {
 	SignedInfo     SignedInfo     `xml:"SignedInfo"`
 	SignatureValue SignatureValue `xml:"SignatureValue"`
 	KeyInfo        KeyInfo        `xml:"KeyInfo"`
+	Object         XAdESObject    `xml:"Object"`
 }
 
 type KeyInfo struct {
@@ -97,6 +100,53 @@ type SignatureValue struct {
 	Value   string   `xml:",chardata"`
 }
 
+type XAdESObject struct {
+	XMLName              xml.Name `xml:"Object"`
+	QualifyingProperties XAdESQualifyingProperties
+}
+
+type XAdESQualifyingProperties struct {
+	XMLName          xml.Name `xml:"xades:QualifyingProperties"`
+	XMLNS            string   `xml:"xmlns:xades,attr"`
+	Target           string   `xml:"Target,attr"`
+	SignedProperties XAdESSignedProperties
+}
+
+type XAdESSignedProperties struct {
+	XMLName                   xml.Name `xml:"xades:SignedProperties"`
+	ID                        string   `xml:"Id,attr"`
+	SignedSignatureProperties XAdESSignedSignatureProperties
+}
+
+type XAdESSignedSignatureProperties struct {
+	XMLName            xml.Name  `xml:"xades:SignedSignatureProperties"`
+	SigningTime        time.Time `xml:"xades:SigningTime"`
+	SigningCertificate XAdESSigningCertificate
+}
+
+type XAdESSigningCertificate struct {
+	XMLName xml.Name `xml:"xades:SigningCertificate"`
+	Cert    XAdESCert
+}
+
+type XAdESCert struct {
+	XMLName      xml.Name `xml:"xades:Cert"`
+	CertDigest   XAdESCertDigest
+	IssuerSerial XAdESIssuerSerial
+}
+
+type XAdESCertDigest struct {
+	XMLName      xml.Name     `xml:"xades:CertDigest"`
+	DigestMethod DigestMethod `xml:"DigestMethod"`
+	DigestValue  string       `xml:"DigestValue"`
+}
+
+type XAdESIssuerSerial struct {
+	XMLName          xml.Name `xml:"xades:IssuerSerial"`
+	X509IssuerName   string   `xml:"X509IssuerName"`
+	X509SerialNumber string   `xml:"X509SerialNumber"`
+}
+
 func SerializeSignatureXMLDSig(r, s *big.Int) string {
 	// For P-256 (secp256r1), R and S should each be 32 bytes
 	rBytes := r.Bytes()
@@ -110,7 +160,38 @@ func SerializeSignatureXMLDSig(r, s *big.Int) string {
 	return base64.StdEncoding.EncodeToString(signature)
 }
 
-func BuildSignatureTemplate(certDer []byte) *Signature {
+func buildSigningCertificateInfo(certDer []byte) (*XAdESSigningCertificate, error) {
+	cert, err := x509.ParseCertificate(certDer)
+	if err != nil {
+		return nil, err
+	}
+
+	hash := sha256.Sum256(certDer)
+
+	digest := XAdESCertDigest{
+		DigestMethod: DigestMethod{
+			Algorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
+		},
+		DigestValue: base64.StdEncoding.EncodeToString(hash[:]),
+	}
+
+	return &XAdESSigningCertificate{
+		Cert: XAdESCert{
+			CertDigest: digest,
+			IssuerSerial: XAdESIssuerSerial{
+				X509IssuerName:   cert.Issuer.String(),
+				X509SerialNumber: cert.SerialNumber.String(),
+			},
+		},
+	}, nil
+}
+
+func BuildSignatureTemplate(certDer []byte) (*Signature, error) {
+	certInfo, err := buildSigningCertificateInfo(certDer)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Signature{
 		ID: "Signature",
 		SignedInfo: SignedInfo{
@@ -144,7 +225,20 @@ func BuildSignatureTemplate(certDer []byte) *Signature {
 				},
 			},
 		}},
-	}
+		Object: XAdESObject{
+			QualifyingProperties: XAdESQualifyingProperties{
+				XMLNS:  "http://uri.etsi.org/01903/v1.3.2#",
+				Target: "#Signature",
+				SignedProperties: XAdESSignedProperties{
+					ID: "SignedProperties",
+					SignedSignatureProperties: XAdESSignedSignatureProperties{
+						SigningTime:        time.Now(),
+						SigningCertificate: *certInfo,
+					},
+				},
+			},
+		},
+	}, nil
 }
 
 func MarshalToEtreeDocument(object any) (*etree.Document, error) {
@@ -191,7 +285,10 @@ func BuildXMLSignature(xmlString string, key *ecdsa.PrivateKey, certDer []byte) 
 
 	digestBytes := sha256.Sum256(canonicalRoot)
 
-	signature := BuildSignatureTemplate(certDer)
+	signature, err := BuildSignatureTemplate(certDer)
+	if err != nil {
+		return nil, err
+	}
 	signature.SignedInfo.Reference.DigestValue = base64.StdEncoding.EncodeToString(digestBytes[:])
 
 	r, s, err := calculateSignature(signature, key, c14n)
