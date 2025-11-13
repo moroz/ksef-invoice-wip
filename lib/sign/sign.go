@@ -155,3 +155,24 @@ func BuildXMLSignature(xmlString string, key *ecdsa.PrivateKey, certDer []byte) 
 	signature.SignatureValue.Value = SerializeSignatureXMLDSig(r, s)
 	return xml.Marshal(signature)
 }
+
+func SignXML(xmlString string, key *ecdsa.PrivateKey, certDer []byte) (result []byte, err error) {
+	doc := etree.NewDocument()
+	if err = doc.ReadFromString(xmlString); err != nil {
+		return
+	}
+
+	signature, err := BuildXMLSignature(xmlString, key, certDer)
+	if err != nil {
+		return
+	}
+
+	sigNode := etree.NewDocument()
+	if err = sigNode.ReadFromBytes(signature); err != nil {
+		return
+	}
+
+	doc.Root().AddChild(sigNode.Root())
+
+	return CanonicalSerialize(doc.Root())
+}
