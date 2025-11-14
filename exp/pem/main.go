@@ -1,12 +1,13 @@
 package main
 
 import (
-	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"ksef-go/config"
 	"log"
 	"os"
+
+	"github.com/youmark/pkcs8"
 )
 
 func main() {
@@ -20,10 +21,9 @@ func main() {
 		log.Fatal("Failed to decode priv key PEM")
 	}
 
-	decrypted, err := x509.DecryptPEMBlock(block, []byte(config.AuthenticationPrivKeyPassphrase))
+	key, err := pkcs8.ParsePKCS8PrivateKeyECDSA(block.Bytes, []byte(config.AuthenticationPrivKeyPassphrase))
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(decrypted)
+	fmt.Printf("%+v\n", key)
 }

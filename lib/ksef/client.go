@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
+	"io"
 	"ksef-go/lib/sign"
 	"log"
 	"net/http"
@@ -55,6 +56,7 @@ func (c *Client) Authenticate() (err error) {
 	if err != nil {
 		return
 	}
+	fmt.Println(string(signed))
 
 	xadesResp, err := c.SubmitAuthXAdESSignature(signed)
 	if err != nil {
@@ -78,7 +80,7 @@ func (c *Client) Authenticate() (err error) {
 }
 
 func (c *Client) GetAuthChallenge() (*AuthChallengeResult, error) {
-	req, err := http.NewRequest("POST", BaseUrl+GetAuthEndpoint, nil)
+	req, err := http.NewRequest("POST", c.baseUrl+GetAuthEndpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +96,7 @@ func (c *Client) GetAuthChallenge() (*AuthChallengeResult, error) {
 }
 
 func (c *Client) CheckAuthenticationStatus(ref, token string) (*CheckAuthenticationStatusResponse, error) {
-	url := BaseUrl + strings.ReplaceAll(CheckAuthenticationStatusEndpoint, "{ref}", ref)
+	url := c.baseUrl + strings.ReplaceAll(CheckAuthenticationStatusEndpoint, "{ref}", ref)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -128,7 +130,7 @@ func (c *Client) AwaitAuthorization(ref, token string) (err error) {
 }
 
 func (c *Client) RedeemAuthToken(bearer string) (*RedeemAuthTokenResponse, error) {
-	req, err := http.NewRequest("POST", BaseUrl+RedeemAuthTokenEndpoint, nil)
+	req, err := http.NewRequest("POST", c.baseUrl+RedeemAuthTokenEndpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +164,7 @@ func BuildAuthTokenRequestFromChallenge(challenge *AuthChallengeResult, nip stri
 
 func (c *Client) SubmitAuthXAdESSignature(xmlBytes []byte) (*SubmitAuthXAdESSignatureResponse, error) {
 	body := bytes.NewBuffer(xmlBytes)
-	req, err := http.NewRequest("POST", BaseUrl+SubmitAuthXAdESSignatureEndpoint, body)
+	req, err := http.NewRequest("POST", c.baseUrl+SubmitAuthXAdESSignatureEndpoint, body)
 	if err != nil {
 		return nil, err
 	}
@@ -173,6 +175,9 @@ func (c *Client) SubmitAuthXAdESSignature(xmlBytes []byte) (*SubmitAuthXAdESSign
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 202 {
+		body, _ := io.ReadAll(resp.Body)
+		log.Println(string(body))
+
 		return nil, fmt.Errorf("SubmitAuthXAdESSignature: unexpected status code (want %v, got %v)", 202, resp.StatusCode)
 	}
 
