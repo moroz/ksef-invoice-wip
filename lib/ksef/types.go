@@ -51,3 +51,19 @@ type SubmitAuthXAdESSignatureResponse struct {
 		ValidUntil time.Time
 	}
 }
+
+type OpenInteractiveSessionRequest struct {
+	FormCode   OpenInteractiveSessionRequestFormCode   `json:"formCode"`
+	Encryption OpenInteractiveSessionRequestEncryption `json:"encryption"`
+}
+
+type OpenInteractiveSessionRequestFormCode struct {
+	SystemCode    string `json:"systemCode"`
+	SchemaVersion string `json:"schemaVersion"`
+	Value         string `json:"value"`
+}
+
+type OpenInteractiveSessionRequestEncryption struct {
+	EncryptedSymmetricKey []byte `json:"encryptedSymmetricKey"`
+	InitializationVector  []byte `json:"initializationVector"`
+}

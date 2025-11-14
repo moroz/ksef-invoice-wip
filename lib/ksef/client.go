@@ -28,12 +28,12 @@ func NewClient(env Environment, nip string, certDer []byte, key *ecdsa.PrivateKe
 	client := &Client{certDer: certDer, privKey: key, nip: nip, env: env}
 
 	switch env {
-	case Environment_Test:
-		client.baseUrl = BaseUrl_Test
-	case Environment_PreProd:
-		client.baseUrl = BaseUrl_PreProd
-	case Envoronment_Prod:
-		client.baseUrl = BaseUrl_Prod
+	case EnvironmentTest:
+		client.baseUrl = BaseurlTest
+	case EnvironmentPreprod:
+		client.baseUrl = BaseurlPreprod
+	case EnvironmentProd:
+		client.baseUrl = BaseurlProd
 	default:
 		return nil, fmt.Errorf("unknown environment %v", env)
 	}

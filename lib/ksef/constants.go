@@ -8,11 +8,11 @@ const CheckAuthenticationStatusEndpoint = "/auth/{ref}"
 type Environment int
 
 const (
-	Environment_Test Environment = iota
-	Environment_PreProd
-	Envoronment_Prod
+	EnvironmentTest Environment = iota
+	EnvironmentPreprod
+	EnvironmentProd
 )
 
-const BaseUrl_Test = "https://ksef-test.mf.gov.pl/api/v2"
-const BaseUrl_PreProd = "https://ksef-demo.mf.gov.pl/api/v2"
-const BaseUrl_Prod = "https://ksef.mf.gov.pl/api/v2"
+const BaseurlTest = "https://ksef-test.mf.gov.pl/api/v2"
+const BaseurlPreprod = "https://ksef-demo.mf.gov.pl/api/v2"
+const BaseurlProd = "https://ksef.mf.gov.pl/api/v2"

@@ -18,7 +18,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	client, err := ksef.NewClient(ksef.Envoronment_Prod, config.NipNumber, der, key)
+	client, err := ksef.NewClient(ksef.EnvironmentProd, config.NipNumber, der, key)
 	if err != nil {
 		log.Fatal(err)
 	}
