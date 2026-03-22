@@ -4,149 +4,149 @@ import "encoding/xml"
 
 const Namespace = "http://crd.gov.pl/wzor/2025/06/25/13775/"
 
-// Faktura is the root element of a KSeF FA(3) invoice.
-type Faktura struct {
-	XMLName            xml.Name            `xml:"http://crd.gov.pl/wzor/2025/06/25/13775/ Faktura"`
-	Naglowek           Naglowek            `xml:"Naglowek"`
-	Podmiot1           Podmiot1            `xml:"Podmiot1"`
-	Podmiot2           Podmiot2            `xml:"Podmiot2"`
-	Podmiot3           []Podmiot3Element   `xml:"Podmiot3,omitempty"`
-	PodmiotUpowazniony *PodmiotUpowazniony `xml:"PodmiotUpowazniony,omitempty"`
-	Fa                 Fa                  `xml:"Fa"`
-	Stopka             *Stopka             `xml:"Stopka,omitempty"`
-	Zalacznik          *Zalacznik          `xml:"Zalacznik,omitempty"`
+// Invoice is the root element of a KSeF FA(3) invoice.
+type Invoice struct {
+	XMLName          xml.Name          `xml:"http://crd.gov.pl/wzor/2025/06/25/13775/ Faktura"`
+	Header           Header            `xml:"Naglowek"`
+	Seller           Seller            `xml:"Podmiot1"`
+	Buyer            Buyer             `xml:"Podmiot2"`
+	ThirdParties     []ThirdParty      `xml:"Podmiot3,omitempty"`
+	AuthorizedEntity *AuthorizedEntity `xml:"PodmiotUpowazniony,omitempty"`
+	Body             InvoiceBody       `xml:"Fa"`
+	Footer           *Footer           `xml:"Stopka,omitempty"`
+	Attachment       *Attachment       `xml:"Zalacznik,omitempty"`
 }
 
 // --- Header ---
 
-type Naglowek struct {
-	KodFormularza     KodFormularza `xml:"KodFormularza"`
-	WariantFormularza int8          `xml:"WariantFormularza"`
-	DataWytworzeniaFa string        `xml:"DataWytworzeniaFa"`
-	SystemInfo        string        `xml:"SystemInfo,omitempty"`
+type Header struct {
+	FormCode     FormCode `xml:"KodFormularza"`
+	FormVariant  int8     `xml:"WariantFormularza"`
+	CreationDate string   `xml:"DataWytworzeniaFa"`
+	SystemInfo   string   `xml:"SystemInfo,omitempty"`
 }
 
-type KodFormularza struct {
-	Value        string `xml:",chardata"`
-	KodSystemowy string `xml:"kodSystemowy,attr"`
-	WersjaSchemy string `xml:"wersjaSchemy,attr"`
+type FormCode struct {
+	Value         string `xml:",chardata"`
+	SystemCode    string `xml:"kodSystemowy,attr"`
+	SchemaVersion string `xml:"wersjaSchemy,attr"`
 }
 
 // --- Address ---
 
-type Adres struct {
-	KodKraju string `xml:"KodKraju"`
-	AdresL1  string `xml:"AdresL1"`
-	AdresL2  string `xml:"AdresL2,omitempty"`
-	GLN      string `xml:"GLN,omitempty"`
+type Address struct {
+	CountryCode  string `xml:"KodKraju"`
+	AddressLine1 string `xml:"AdresL1"`
+	AddressLine2 string `xml:"AdresL2,omitempty"`
+	GLN          string `xml:"GLN,omitempty"`
 }
 
 // --- Contact ---
 
-type DaneKontaktowe struct {
-	Email   string `xml:"Email,omitempty"`
-	Telefon string `xml:"Telefon,omitempty"`
+type ContactData struct {
+	Email string `xml:"Email,omitempty"`
+	Phone string `xml:"Telefon,omitempty"`
 }
 
-// --- Podmiot1 (Seller) ---
+// --- Seller ---
 
-type Podmiot1 struct {
-	PrefiksPodatnika    string           `xml:"PrefiksPodatnika,omitempty"`
-	NrEORI              string           `xml:"NrEORI,omitempty"`
-	DaneIdentyfikacyjne Podmiot1Ident    `xml:"DaneIdentyfikacyjne"`
-	Adres               Adres            `xml:"Adres"`
-	AdresKoresp         *Adres           `xml:"AdresKoresp,omitempty"`
-	DaneKontaktowe      []DaneKontaktowe `xml:"DaneKontaktowe,omitempty"`
-	StatusInfoPodatnika *int             `xml:"StatusInfoPodatnika,omitempty"`
+type Seller struct {
+	TaxpayerPrefix     string        `xml:"PrefiksPodatnika,omitempty"`
+	EORINumber         string        `xml:"NrEORI,omitempty"`
+	IdentData          SellerIdent   `xml:"DaneIdentyfikacyjne"`
+	Address            Address       `xml:"Adres"`
+	CorrespondenceAddr *Address      `xml:"AdresKoresp,omitempty"`
+	ContactData        []ContactData `xml:"DaneKontaktowe,omitempty"`
+	TaxpayerStatusInfo *int          `xml:"StatusInfoPodatnika,omitempty"`
 }
 
-type Podmiot1Ident struct {
-	NIP   string `xml:"NIP"`
-	Nazwa string `xml:"Nazwa"`
+type SellerIdent struct {
+	NIP  string `xml:"NIP"`
+	Name string `xml:"Nazwa"`
 }
 
-// --- Podmiot2 (Buyer) ---
+// --- Buyer ---
 
-type Podmiot2 struct {
-	NrEORI              string           `xml:"NrEORI,omitempty"`
-	DaneIdentyfikacyjne Podmiot2Ident    `xml:"DaneIdentyfikacyjne"`
-	Adres               *Adres           `xml:"Adres,omitempty"`
-	AdresKoresp         *Adres           `xml:"AdresKoresp,omitempty"`
-	DaneKontaktowe      []DaneKontaktowe `xml:"DaneKontaktowe,omitempty"`
-	NrKlienta           string           `xml:"NrKlienta,omitempty"`
-	IDNabywcy           string           `xml:"IDNabywcy,omitempty"`
-	JST                 int              `xml:"JST"`
-	GV                  int              `xml:"GV"`
+type Buyer struct {
+	EORINumber         string        `xml:"NrEORI,omitempty"`
+	IdentData          BuyerIdent    `xml:"DaneIdentyfikacyjne"`
+	Address            *Address      `xml:"Adres,omitempty"`
+	CorrespondenceAddr *Address      `xml:"AdresKoresp,omitempty"`
+	ContactData        []ContactData `xml:"DaneKontaktowe,omitempty"`
+	CustomerNumber     string        `xml:"NrKlienta,omitempty"`
+	BuyerID            string        `xml:"IDNabywcy,omitempty"`
+	JST                int           `xml:"JST"`
+	GV                 int           `xml:"GV"`
 }
 
-// Podmiot2Ident represents the buyer identification.
+// BuyerIdent represents the buyer identification.
 // The XSD uses a choice between NIP, KodUE+NrVatUE, KodKraju+NrID, or BrakID.
 // All fields are optional; populate exactly one group.
-type Podmiot2Ident struct {
-	NIP      string `xml:"NIP,omitempty"`
-	KodUE    string `xml:"KodUE,omitempty"`
-	NrVatUE  string `xml:"NrVatUE,omitempty"`
-	KodKraju string `xml:"KodKraju,omitempty"`
-	NrID     string `xml:"NrID,omitempty"`
-	BrakID   *int   `xml:"BrakID,omitempty"`
-	Nazwa    string `xml:"Nazwa,omitempty"`
+type BuyerIdent struct {
+	NIP         string `xml:"NIP,omitempty"`
+	EUCode      string `xml:"KodUE,omitempty"`
+	EUVatNumber string `xml:"NrVatUE,omitempty"`
+	CountryCode string `xml:"KodKraju,omitempty"`
+	IDNumber    string `xml:"NrID,omitempty"`
+	NoID        *int   `xml:"BrakID,omitempty"`
+	Name        string `xml:"Nazwa,omitempty"`
 }
 
-// --- Podmiot3 (Third parties) ---
+// --- ThirdParty ---
 
-type Podmiot3Element struct {
-	IDNabywcy           string           `xml:"IDNabywcy,omitempty"`
-	NrEORI              string           `xml:"NrEORI,omitempty"`
-	DaneIdentyfikacyjne Podmiot3Ident    `xml:"DaneIdentyfikacyjne"`
-	Adres               *Adres           `xml:"Adres,omitempty"`
-	AdresKoresp         *Adres           `xml:"AdresKoresp,omitempty"`
-	DaneKontaktowe      []DaneKontaktowe `xml:"DaneKontaktowe,omitempty"`
-	Rola                *int             `xml:"Rola,omitempty"`
-	RolaInna            *int             `xml:"RolaInna,omitempty"`
-	OpisRoli            string           `xml:"OpisRoli,omitempty"`
-	Udzial              string           `xml:"Udzial,omitempty"`
-	NrKlienta           string           `xml:"NrKlienta,omitempty"`
+type ThirdParty struct {
+	BuyerID            string          `xml:"IDNabywcy,omitempty"`
+	EORINumber         string          `xml:"NrEORI,omitempty"`
+	IdentData          ThirdPartyIdent `xml:"DaneIdentyfikacyjne"`
+	Address            *Address        `xml:"Adres,omitempty"`
+	CorrespondenceAddr *Address        `xml:"AdresKoresp,omitempty"`
+	ContactData        []ContactData   `xml:"DaneKontaktowe,omitempty"`
+	Role               *int            `xml:"Rola,omitempty"`
+	OtherRole          *int            `xml:"RolaInna,omitempty"`
+	RoleDescription    string          `xml:"OpisRoli,omitempty"`
+	Share              string          `xml:"Udzial,omitempty"`
+	CustomerNumber     string          `xml:"NrKlienta,omitempty"`
 }
 
-type Podmiot3Ident struct {
-	NIP      string `xml:"NIP,omitempty"`
-	IDWew    string `xml:"IDWew,omitempty"`
-	KodUE    string `xml:"KodUE,omitempty"`
-	NrVatUE  string `xml:"NrVatUE,omitempty"`
-	KodKraju string `xml:"KodKraju,omitempty"`
-	NrID     string `xml:"NrID,omitempty"`
-	BrakID   *int   `xml:"BrakID,omitempty"`
-	Nazwa    string `xml:"Nazwa,omitempty"`
+type ThirdPartyIdent struct {
+	NIP         string `xml:"NIP,omitempty"`
+	InternalID  string `xml:"IDWew,omitempty"`
+	EUCode      string `xml:"KodUE,omitempty"`
+	EUVatNumber string `xml:"NrVatUE,omitempty"`
+	CountryCode string `xml:"KodKraju,omitempty"`
+	IDNumber    string `xml:"NrID,omitempty"`
+	NoID        *int   `xml:"BrakID,omitempty"`
+	Name        string `xml:"Nazwa,omitempty"`
 }
 
-// --- PodmiotUpowazniony ---
+// --- AuthorizedEntity ---
 
-type PodmiotUpowazniony struct {
-	NrEORI              string             `xml:"NrEORI,omitempty"`
-	DaneIdentyfikacyjne Podmiot1Ident      `xml:"DaneIdentyfikacyjne"`
-	Adres               Adres              `xml:"Adres"`
-	AdresKoresp         *Adres             `xml:"AdresKoresp,omitempty"`
-	DaneKontaktowe      []DaneKontaktowePU `xml:"DaneKontaktowe,omitempty"`
-	RolaPU              int                `xml:"RolaPU"`
+type AuthorizedEntity struct {
+	EORINumber         string                    `xml:"NrEORI,omitempty"`
+	IdentData          SellerIdent               `xml:"DaneIdentyfikacyjne"`
+	Address            Address                   `xml:"Adres"`
+	CorrespondenceAddr *Address                  `xml:"AdresKoresp,omitempty"`
+	ContactData        []AuthorizedEntityContact `xml:"DaneKontaktowe,omitempty"`
+	Role               int                       `xml:"RolaPU"`
 }
 
-type DaneKontaktowePU struct {
-	EmailPU   string `xml:"EmailPU,omitempty"`
-	TelefonPU string `xml:"TelefonPU,omitempty"`
+type AuthorizedEntityContact struct {
+	Email string `xml:"EmailPU,omitempty"`
+	Phone string `xml:"TelefonPU,omitempty"`
 }
 
-// --- Fa (Invoice body) ---
+// --- InvoiceBody ---
 
-type Fa struct {
-	KodWaluty string   `xml:"KodWaluty"`
-	P1        string   `xml:"P_1"`            // Data wystawienia
-	P1M       string   `xml:"P_1M,omitempty"` // Miejsce wystawienia
-	P2        string   `xml:"P_2"`            // Numer faktury
-	WZ        []string `xml:"WZ,omitempty"`
+type InvoiceBody struct {
+	CurrencyCode string   `xml:"KodWaluty"`
+	P1           string   `xml:"P_1"`            // Data wystawienia
+	P1M          string   `xml:"P_1M,omitempty"` // Miejsce wystawienia
+	P2           string   `xml:"P_2"`            // Numer faktury
+	WZ           []string `xml:"WZ,omitempty"`
 
 	// Date of delivery/service (choice: single date or period)
-	P6      string   `xml:"P_6,omitempty"`
-	OkresFa *OkresFa `xml:"OkresFa,omitempty"`
+	P6     string         `xml:"P_6,omitempty"`
+	Period *InvoicePeriod `xml:"OkresFa,omitempty"`
 
 	// Tax rate summaries: 23%/22%
 	P131  string `xml:"P_13_1,omitempty"`
@@ -183,56 +183,56 @@ type Fa struct {
 	P1310 string `xml:"P_13_10,omitempty"` // odwrotne obciążenie
 	P1311 string `xml:"P_13_11,omitempty"` // marża
 
-	P15         string `xml:"P_15"` // Kwota należności ogółem
-	KursWalutyZ string `xml:"KursWalutyZ,omitempty"`
+	P15           string `xml:"P_15"` // Kwota należności ogółem
+	ExchangeRateZ string `xml:"KursWalutyZ,omitempty"`
 
-	Adnotacje     Adnotacje `xml:"Adnotacje"`
-	RodzajFaktury string    `xml:"RodzajFaktury"`
+	Annotations Annotations `xml:"Adnotacje"`
+	InvoiceType string      `xml:"RodzajFaktury"`
 
 	// Correction-related fields
-	PrzyczynaKorekty   string              `xml:"PrzyczynaKorekty,omitempty"`
-	TypKorekty         *int                `xml:"TypKorekty,omitempty"`
-	DaneFaKorygowanej  []DaneFaKorygowanej `xml:"DaneFaKorygowanej,omitempty"`
-	OkresFaKorygowanej string              `xml:"OkresFaKorygowanej,omitempty"`
-	NrFaKorygowany     string              `xml:"NrFaKorygowany,omitempty"`
-	Podmiot1K          *Podmiot1K          `xml:"Podmiot1K,omitempty"`
-	Podmiot2K          []Podmiot2K         `xml:"Podmiot2K,omitempty"`
-	P15ZK              string              `xml:"P_15ZK,omitempty"`
-	KursWalutyZK       string              `xml:"KursWalutyZK,omitempty"`
+	CorrectionReason  string                 `xml:"PrzyczynaKorekty,omitempty"`
+	CorrectionType    *int                   `xml:"TypKorekty,omitempty"`
+	CorrectedInvoices []CorrectedInvoiceData `xml:"DaneFaKorygowanej,omitempty"`
+	CorrectedPeriod   string                 `xml:"OkresFaKorygowanej,omitempty"`
+	CorrectedNumber   string                 `xml:"NrFaKorygowany,omitempty"`
+	SellerCorrection  *SellerCorrection      `xml:"Podmiot1K,omitempty"`
+	BuyerCorrections  []BuyerCorrection      `xml:"Podmiot2K,omitempty"`
+	P15ZK             string                 `xml:"P_15ZK,omitempty"`
+	ExchangeRateZK    string                 `xml:"KursWalutyZK,omitempty"`
 
-	ZaliczkaCzesciowa []ZaliczkaCzesciowa `xml:"ZaliczkaCzesciowa,omitempty"`
-	FP                *int                `xml:"FP,omitempty"`
-	TP                *int                `xml:"TP,omitempty"`
-	DodatkowyOpis     []KluczWartosc      `xml:"DodatkowyOpis,omitempty"`
-	FakturaZaliczkowa []FakturaZaliczkowa `xml:"FakturaZaliczkowa,omitempty"`
-	ZwrotAkcyzy       *int                `xml:"ZwrotAkcyzy,omitempty"`
+	PartialAdvances []PartialAdvance `xml:"ZaliczkaCzesciowa,omitempty"`
+	FP              *int             `xml:"FP,omitempty"`
+	TP              *int             `xml:"TP,omitempty"`
+	AdditionalDesc  []KeyValue       `xml:"DodatkowyOpis,omitempty"`
+	AdvanceInvoices []AdvanceInvoice `xml:"FakturaZaliczkowa,omitempty"`
+	ExciseTaxReturn *int             `xml:"ZwrotAkcyzy,omitempty"`
 
-	FaWiersz          []FaWiersz         `xml:"FaWiersz,omitempty"`
-	Rozliczenie       *Rozliczenie       `xml:"Rozliczenie,omitempty"`
-	Platnosc          *Platnosc          `xml:"Platnosc,omitempty"`
-	WarunkiTransakcji *WarunkiTransakcji `xml:"WarunkiTransakcji,omitempty"`
-	Zamowienie        *Zamowienie        `xml:"Zamowienie,omitempty"`
+	Lines          []InvoiceLine          `xml:"FaWiersz,omitempty"`
+	Settlement     *Settlement            `xml:"Rozliczenie,omitempty"`
+	Payment        *Payment               `xml:"Platnosc,omitempty"`
+	TransactionConds *TransactionConditions `xml:"WarunkiTransakcji,omitempty"`
+	Order          *Order                 `xml:"Zamowienie,omitempty"`
 }
 
-type OkresFa struct {
-	P6Od string `xml:"P_6_Od"`
-	P6Do string `xml:"P_6_Do"`
+type InvoicePeriod struct {
+	From string `xml:"P_6_Od"`
+	To   string `xml:"P_6_Do"`
 }
 
-// --- Adnotacje ---
+// --- Annotations ---
 
-type Adnotacje struct {
-	P16                  int                  `xml:"P_16"`
-	P17                  int                  `xml:"P_17"`
-	P18                  int                  `xml:"P_18"`
-	P18A                 int                  `xml:"P_18A"`
-	Zwolnienie           Zwolnienie           `xml:"Zwolnienie"`
-	NoweSrodkiTransportu NoweSrodkiTransportu `xml:"NoweSrodkiTransportu"`
-	P23                  int                  `xml:"P_23"`
-	PMarzy               PMarzy               `xml:"PMarzy"`
+type Annotations struct {
+	P16          int               `xml:"P_16"`
+	P17          int               `xml:"P_17"`
+	P18          int               `xml:"P_18"`
+	P18A         int               `xml:"P_18A"`
+	Exemption    Exemption         `xml:"Zwolnienie"`
+	NewTransport NewTransportMeans `xml:"NoweSrodkiTransportu"`
+	P23          int               `xml:"P_23"`
+	Margin       Margin            `xml:"PMarzy"`
 }
 
-type Zwolnienie struct {
+type Exemption struct {
 	P19  *int   `xml:"P_19,omitempty"`
 	P19A string `xml:"P_19A,omitempty"`
 	P19B string `xml:"P_19B,omitempty"`
@@ -240,21 +240,21 @@ type Zwolnienie struct {
 	P19N *int   `xml:"P_19N,omitempty"`
 }
 
-type NoweSrodkiTransportu struct {
-	P22                  *int                   `xml:"P_22,omitempty"`
-	P42_5                *int                   `xml:"P_42_5,omitempty"`
-	NowySrodekTransportu []NowySrodekTransportu `xml:"NowySrodekTransportu,omitempty"`
-	P22N                 *int                   `xml:"P_22N,omitempty"`
+type NewTransportMeans struct {
+	P22   *int                    `xml:"P_22,omitempty"`
+	P42_5 *int                    `xml:"P_42_5,omitempty"`
+	Items []NewTransportMeansItem `xml:"NowySrodekTransportu,omitempty"`
+	P22N  *int                    `xml:"P_22N,omitempty"`
 }
 
-type NowySrodekTransportu struct {
-	P22A          string `xml:"P_22A"`
-	PNrWierszaNST int    `xml:"P_NrWierszaNST"`
-	P22BMK        string `xml:"P_22BMK,omitempty"`
-	P22BMD        string `xml:"P_22BMD,omitempty"`
-	P22BK         string `xml:"P_22BK,omitempty"`
-	P22BNR        string `xml:"P_22BNR,omitempty"`
-	P22BRP        string `xml:"P_22BRP,omitempty"`
+type NewTransportMeansItem struct {
+	P22A       string `xml:"P_22A"`
+	LineNumber int    `xml:"P_NrWierszaNST"`
+	P22BMK     string `xml:"P_22BMK,omitempty"`
+	P22BMD     string `xml:"P_22BMD,omitempty"`
+	P22BK      string `xml:"P_22BK,omitempty"`
+	P22BNR     string `xml:"P_22BNR,omitempty"`
+	P22BRP     string `xml:"P_22BRP,omitempty"`
 	// Land vehicle
 	P22B  string `xml:"P_22B,omitempty"`
 	P22B1 string `xml:"P_22B1,omitempty"`
@@ -270,7 +270,7 @@ type NowySrodekTransportu struct {
 	P22D1 string `xml:"P_22D1,omitempty"`
 }
 
-type PMarzy struct {
+type Margin struct {
 	PPMarzy   *int `xml:"P_PMarzy,omitempty"`
 	PPMarzy2  *int `xml:"P_PMarzy_2,omitempty"`
 	PPMarzy31 *int `xml:"P_PMarzy_3_1,omitempty"`
@@ -281,289 +281,289 @@ type PMarzy struct {
 
 // --- Invoice line items ---
 
-type FaWiersz struct {
-	NrWierszaFa int    `xml:"NrWierszaFa"`
-	UUID        string `xml:"UU_ID,omitempty"`
-	P6A         string `xml:"P_6A,omitempty"`
-	P7          string `xml:"P_7,omitempty"`
-	Indeks      string `xml:"Indeks,omitempty"`
-	GTIN        string `xml:"GTIN,omitempty"`
-	PKWiU       string `xml:"PKWiU,omitempty"`
-	CN          string `xml:"CN,omitempty"`
-	PKOB        string `xml:"PKOB,omitempty"`
-	P8A         string `xml:"P_8A,omitempty"`  // unit of measure
-	P8B         string `xml:"P_8B,omitempty"`  // quantity
-	P9A         string `xml:"P_9A,omitempty"`  // unit price net
-	P9B         string `xml:"P_9B,omitempty"`  // unit price gross
-	P10         string `xml:"P_10,omitempty"`  // discount
-	P11         string `xml:"P_11,omitempty"`  // net value
-	P11A        string `xml:"P_11A,omitempty"` // gross value
-	P11Vat      string `xml:"P_11Vat,omitempty"`
-	P12         string `xml:"P_12,omitempty"` // tax rate
-	P12XII      string `xml:"P_12_XII,omitempty"`
-	P12Zal15    *int   `xml:"P_12_Zal_15,omitempty"`
-	KwotaAkcyzy string `xml:"KwotaAkcyzy,omitempty"`
-	GTU         string `xml:"GTU,omitempty"`
-	Procedura   string `xml:"Procedura,omitempty"`
-	KursWaluty  string `xml:"KursWaluty,omitempty"`
-	StanPrzed   *int   `xml:"StanPrzed,omitempty"`
+type InvoiceLine struct {
+	LineNumber    int    `xml:"NrWierszaFa"`
+	UUID          string `xml:"UU_ID,omitempty"`
+	P6A           string `xml:"P_6A,omitempty"`
+	P7            string `xml:"P_7,omitempty"`
+	Index         string `xml:"Indeks,omitempty"`
+	GTIN          string `xml:"GTIN,omitempty"`
+	PKWiU         string `xml:"PKWiU,omitempty"`
+	CN            string `xml:"CN,omitempty"`
+	PKOB          string `xml:"PKOB,omitempty"`
+	P8A           string `xml:"P_8A,omitempty"`  // unit of measure
+	P8B           string `xml:"P_8B,omitempty"`  // quantity
+	P9A           string `xml:"P_9A,omitempty"`  // unit price net
+	P9B           string `xml:"P_9B,omitempty"`  // unit price gross
+	P10           string `xml:"P_10,omitempty"`  // discount
+	P11           string `xml:"P_11,omitempty"`  // net value
+	P11A          string `xml:"P_11A,omitempty"` // gross value
+	P11Vat        string `xml:"P_11Vat,omitempty"`
+	P12           string `xml:"P_12,omitempty"` // tax rate
+	P12XII        string `xml:"P_12_XII,omitempty"`
+	P12Zal15      *int   `xml:"P_12_Zal_15,omitempty"`
+	ExciseTax     string `xml:"KwotaAkcyzy,omitempty"`
+	GTU           string `xml:"GTU,omitempty"`
+	Procedure     string `xml:"Procedura,omitempty"`
+	ExchangeRate  string `xml:"KursWaluty,omitempty"`
+	PreviousState *int   `xml:"StanPrzed,omitempty"`
 }
 
 // --- Correction data ---
 
-type DaneFaKorygowanej struct {
-	DataWystFaKorygowanej string `xml:"DataWystFaKorygowanej"`
-	NrFaKorygowanej       string `xml:"NrFaKorygowanej"`
-	NrKSeF                *int   `xml:"NrKSeF,omitempty"`
-	NrKSeFFaKorygowanej   string `xml:"NrKSeFFaKorygowanej,omitempty"`
-	NrKSeFN               *int   `xml:"NrKSeFN,omitempty"`
+type CorrectedInvoiceData struct {
+	IssueDate      string `xml:"DataWystFaKorygowanej"`
+	Number         string `xml:"NrFaKorygowanej"`
+	KSeFNumber     *int   `xml:"NrKSeF,omitempty"`
+	KSeFCorrNumber string `xml:"NrKSeFFaKorygowanej,omitempty"`
+	NoKSeFNumber   *int   `xml:"NrKSeFN,omitempty"`
 }
 
-type Podmiot1K struct {
-	PrefiksPodatnika    string        `xml:"PrefiksPodatnika,omitempty"`
-	DaneIdentyfikacyjne Podmiot1Ident `xml:"DaneIdentyfikacyjne"`
-	Adres               Adres         `xml:"Adres"`
+type SellerCorrection struct {
+	TaxpayerPrefix string      `xml:"PrefiksPodatnika,omitempty"`
+	IdentData      SellerIdent `xml:"DaneIdentyfikacyjne"`
+	Address        Address     `xml:"Adres"`
 }
 
-type Podmiot2K struct {
-	DaneIdentyfikacyjne Podmiot2Ident `xml:"DaneIdentyfikacyjne"`
-	Adres               *Adres        `xml:"Adres,omitempty"`
-	IDNabywcy           string        `xml:"IDNabywcy,omitempty"`
+type BuyerCorrection struct {
+	IdentData BuyerIdent `xml:"DaneIdentyfikacyjne"`
+	Address   *Address   `xml:"Adres,omitempty"`
+	BuyerID   string     `xml:"IDNabywcy,omitempty"`
 }
 
 // --- Advance payments ---
 
-type ZaliczkaCzesciowa struct {
+type PartialAdvance struct {
 	P6Z          string `xml:"P_6Z"`
 	P15Z         string `xml:"P_15Z"`
-	KursWalutyZW string `xml:"KursWalutyZW,omitempty"`
+	ExchangeRate string `xml:"KursWalutyZW,omitempty"`
 }
 
-type FakturaZaliczkowa struct {
-	NrKSeFZN            *int   `xml:"NrKSeFZN,omitempty"`
-	NrFaZaliczkowej     string `xml:"NrFaZaliczkowej,omitempty"`
-	NrKSeFFaZaliczkowej string `xml:"NrKSeFFaZaliczkowej,omitempty"`
+type AdvanceInvoice struct {
+	NoKSeFNumber *int   `xml:"NrKSeFZN,omitempty"`
+	Number       string `xml:"NrFaZaliczkowej,omitempty"`
+	KSeFNumber   string `xml:"NrKSeFFaZaliczkowej,omitempty"`
 }
 
 // --- Key-Value ---
 
-type KluczWartosc struct {
-	NrWiersza *int   `xml:"NrWiersza,omitempty"`
-	Klucz     string `xml:"Klucz"`
-	Wartosc   string `xml:"Wartosc"`
+type KeyValue struct {
+	LineNumber *int   `xml:"NrWiersza,omitempty"`
+	Key        string `xml:"Klucz"`
+	Value      string `xml:"Wartosc"`
 }
 
 // --- Settlement ---
 
-type Rozliczenie struct {
-	Obciazenia    []ObciazenieOdliczenie `xml:"Obciazenia,omitempty"`
-	SumaObciazen  string                 `xml:"SumaObciazen,omitempty"`
-	Odliczenia    []ObciazenieOdliczenie `xml:"Odliczenia,omitempty"`
-	SumaOdliczen  string                 `xml:"SumaOdliczen,omitempty"`
-	DoZaplaty     string                 `xml:"DoZaplaty,omitempty"`
-	DoRozliczenia string                 `xml:"DoRozliczenia,omitempty"`
+type Settlement struct {
+	Charges         []ChargeDeduction `xml:"Obciazenia,omitempty"`
+	TotalCharges    string            `xml:"SumaObciazen,omitempty"`
+	Deductions      []ChargeDeduction `xml:"Odliczenia,omitempty"`
+	TotalDeductions string            `xml:"SumaOdliczen,omitempty"`
+	AmountDue       string            `xml:"DoZaplaty,omitempty"`
+	AmountToSettle  string            `xml:"DoRozliczenia,omitempty"`
 }
 
-type ObciazenieOdliczenie struct {
-	Kwota string `xml:"Kwota"`
-	Powod string `xml:"Powod"`
+type ChargeDeduction struct {
+	Amount string `xml:"Kwota"`
+	Reason string `xml:"Powod"`
 }
 
 // --- Payment ---
 
-type Platnosc struct {
+type Payment struct {
 	// Full payment
-	Zaplacono   *int   `xml:"Zaplacono,omitempty"`
-	DataZaplaty string `xml:"DataZaplaty,omitempty"`
+	Paid     *int   `xml:"Zaplacono,omitempty"`
+	PaidDate string `xml:"DataZaplaty,omitempty"`
 
 	// Partial payment
-	ZnacznikZaplatyCzesciowej *int               `xml:"ZnacznikZaplatyCzesciowej,omitempty"`
-	ZaplataCzesciowa          []ZaplataCzesciowa `xml:"ZaplataCzesciowa,omitempty"`
+	PartialPaymentFlag *int             `xml:"ZnacznikZaplatyCzesciowej,omitempty"`
+	PartialPayments    []PartialPayment `xml:"ZaplataCzesciowa,omitempty"`
 
-	TerminPlatnosci        []TerminPlatnosci `xml:"TerminPlatnosci,omitempty"`
-	FormaPlatnosci         *int              `xml:"FormaPlatnosci,omitempty"`
-	PlatnoscInna           *int              `xml:"PlatnoscInna,omitempty"`
-	OpisPlatnosci          string            `xml:"OpisPlatnosci,omitempty"`
-	RachunekBankowy        []RachunekBankowy `xml:"RachunekBankowy,omitempty"`
-	RachunekBankowyFaktora []RachunekBankowy `xml:"RachunekBankowyFaktora,omitempty"`
-	Skonto                 *Skonto           `xml:"Skonto,omitempty"`
-	LinkDoPlatnosci        string            `xml:"LinkDoPlatnosci,omitempty"`
-	IPKSeF                 string            `xml:"IPKSeF,omitempty"`
+	PaymentTerms       []PaymentTerm `xml:"TerminPlatnosci,omitempty"`
+	PaymentForm        *int          `xml:"FormaPlatnosci,omitempty"`
+	OtherPayment       *int          `xml:"PlatnoscInna,omitempty"`
+	PaymentDescription string        `xml:"OpisPlatnosci,omitempty"`
+	BankAccounts       []BankAccount `xml:"RachunekBankowy,omitempty"`
+	FactorBankAccounts []BankAccount `xml:"RachunekBankowyFaktora,omitempty"`
+	Discount           *Discount     `xml:"Skonto,omitempty"`
+	PaymentLink        string        `xml:"LinkDoPlatnosci,omitempty"`
+	KSeFPaymentID      string        `xml:"IPKSeF,omitempty"`
 }
 
-type ZaplataCzesciowa struct {
-	KwotaZaplatyCzesciowej string `xml:"KwotaZaplatyCzesciowej"`
-	DataZaplatyCzesciowej  string `xml:"DataZaplatyCzesciowej"`
-	FormaPlatnosci         *int   `xml:"FormaPlatnosci,omitempty"`
-	PlatnoscInna           *int   `xml:"PlatnoscInna,omitempty"`
-	OpisPlatnosci          string `xml:"OpisPlatnosci,omitempty"`
+type PartialPayment struct {
+	Amount             string `xml:"KwotaZaplatyCzesciowej"`
+	Date               string `xml:"DataZaplatyCzesciowej"`
+	PaymentForm        *int   `xml:"FormaPlatnosci,omitempty"`
+	OtherPayment       *int   `xml:"PlatnoscInna,omitempty"`
+	PaymentDescription string `xml:"OpisPlatnosci,omitempty"`
 }
 
-type TerminPlatnosci struct {
-	Termin     string      `xml:"Termin,omitempty"`
-	TerminOpis *TerminOpis `xml:"TerminOpis,omitempty"`
+type PaymentTerm struct {
+	Deadline    string           `xml:"Termin,omitempty"`
+	Description *PaymentTermDesc `xml:"TerminOpis,omitempty"`
 }
 
-type TerminOpis struct {
-	Ilosc               int    `xml:"Ilosc"`
-	Jednostka           string `xml:"Jednostka"`
-	ZdarzeniePoczatkowe string `xml:"ZdarzeniePoczatkowe"`
+type PaymentTermDesc struct {
+	Quantity   int    `xml:"Ilosc"`
+	Unit       string `xml:"Jednostka"`
+	StartEvent string `xml:"ZdarzeniePoczatkowe"`
 }
 
-type Skonto struct {
-	WarunkiSkonta  string `xml:"WarunkiSkonta"`
-	WysokoscSkonta string `xml:"WysokoscSkonta"`
+type Discount struct {
+	Conditions string `xml:"WarunkiSkonta"`
+	Amount     string `xml:"WysokoscSkonta"`
 }
 
-type RachunekBankowy struct {
-	NrRB                string `xml:"NrRB"`
-	SWIFT               string `xml:"SWIFT,omitempty"`
-	RachunekWlasnyBanku *int   `xml:"RachunekWlasnyBanku,omitempty"`
-	NazwaBanku          string `xml:"NazwaBanku,omitempty"`
-	OpisRachunku        string `xml:"OpisRachunku,omitempty"`
+type BankAccount struct {
+	AccountNumber  string `xml:"NrRB"`
+	SWIFT          string `xml:"SWIFT,omitempty"`
+	OwnBankAccount *int   `xml:"RachunekWlasnyBanku,omitempty"`
+	BankName       string `xml:"NazwaBanku,omitempty"`
+	AccountDesc    string `xml:"OpisRachunku,omitempty"`
 }
 
 // --- Transaction conditions ---
 
-type WarunkiTransakcji struct {
-	Umowy                []Umowa         `xml:"Umowy,omitempty"`
-	Zamowienia           []ZamowienieRef `xml:"Zamowienia,omitempty"`
-	NrPartiiTowaru       []string        `xml:"NrPartiiTowaru,omitempty"`
-	WarunkiDostawy       string          `xml:"WarunkiDostawy,omitempty"`
-	KursUmowny           string          `xml:"KursUmowny,omitempty"`
-	WalutaUmowna         string          `xml:"WalutaUmowna,omitempty"`
-	Transport            []Transport     `xml:"Transport,omitempty"`
-	PodmiotPosredniczacy *int            `xml:"PodmiotPosredniczacy,omitempty"`
+type TransactionConditions struct {
+	Contracts          []Contract  `xml:"Umowy,omitempty"`
+	Orders             []OrderRef  `xml:"Zamowienia,omitempty"`
+	GoodsLotNumbers    []string    `xml:"NrPartiiTowaru,omitempty"`
+	DeliveryConditions string      `xml:"WarunkiDostawy,omitempty"`
+	ContractRate       string      `xml:"KursUmowny,omitempty"`
+	ContractCurrency   string      `xml:"WalutaUmowna,omitempty"`
+	Transport          []Transport `xml:"Transport,omitempty"`
+	IntermediaryEntity *int        `xml:"PodmiotPosredniczacy,omitempty"`
 }
 
-type Umowa struct {
-	DataUmowy string `xml:"DataUmowy,omitempty"`
-	NrUmowy   string `xml:"NrUmowy,omitempty"`
+type Contract struct {
+	Date   string `xml:"DataUmowy,omitempty"`
+	Number string `xml:"NrUmowy,omitempty"`
 }
 
-type ZamowienieRef struct {
-	DataZamowienia string `xml:"DataZamowienia,omitempty"`
-	NrZamowienia   string `xml:"NrZamowienia,omitempty"`
+type OrderRef struct {
+	Date   string `xml:"DataZamowienia,omitempty"`
+	Number string `xml:"NrZamowienia,omitempty"`
 }
 
 type Transport struct {
-	RodzajTransportu       *int        `xml:"RodzajTransportu,omitempty"`
-	TransportInny          *int        `xml:"TransportInny,omitempty"`
-	OpisInnegoTransportu   string      `xml:"OpisInnegoTransportu,omitempty"`
-	Przewoznik             *Przewoznik `xml:"Przewoznik,omitempty"`
-	NrZleceniaTransportu   string      `xml:"NrZleceniaTransportu,omitempty"`
-	OpisLadunku            *int        `xml:"OpisLadunku,omitempty"`
-	LadunekInny            *int        `xml:"LadunekInny,omitempty"`
-	OpisInnegoLadunku      string      `xml:"OpisInnegoLadunku,omitempty"`
-	JednostkaOpakowania    string      `xml:"JednostkaOpakowania,omitempty"`
-	DataGodzRozpTransportu string      `xml:"DataGodzRozpTransportu,omitempty"`
-	DataGodzZakTransportu  string      `xml:"DataGodzZakTransportu,omitempty"`
-	WysylkaZ               *Adres      `xml:"WysylkaZ,omitempty"`
-	WysylkaPrzez           []Adres     `xml:"WysylkaPrzez,omitempty"`
-	WysylkaDo              *Adres      `xml:"WysylkaDo,omitempty"`
+	Type                   *int     `xml:"RodzajTransportu,omitempty"`
+	OtherTransport         *int     `xml:"TransportInny,omitempty"`
+	OtherTransportDesc     string   `xml:"OpisInnegoTransportu,omitempty"`
+	Carrier                *Carrier `xml:"Przewoznik,omitempty"`
+	TransportOrderNumber   string   `xml:"NrZleceniaTransportu,omitempty"`
+	CargoType              *int     `xml:"OpisLadunku,omitempty"`
+	OtherCargo             *int     `xml:"LadunekInny,omitempty"`
+	OtherCargoDesc         string   `xml:"OpisInnegoLadunku,omitempty"`
+	PackagingUnit          string   `xml:"JednostkaOpakowania,omitempty"`
+	TransportStartDateTime string   `xml:"DataGodzRozpTransportu,omitempty"`
+	TransportEndDateTime   string   `xml:"DataGodzZakTransportu,omitempty"`
+	ShipFrom               *Address `xml:"WysylkaZ,omitempty"`
+	ShipThrough            []Address `xml:"WysylkaPrzez,omitempty"`
+	ShipTo                 *Address `xml:"WysylkaDo,omitempty"`
 }
 
-type Przewoznik struct {
-	DaneIdentyfikacyjne Podmiot2Ident `xml:"DaneIdentyfikacyjne"`
-	AdresPrzewoznika    Adres         `xml:"AdresPrzewoznika"`
+type Carrier struct {
+	IdentData      BuyerIdent `xml:"DaneIdentyfikacyjne"`
+	CarrierAddress Address    `xml:"AdresPrzewoznika"`
 }
 
 // --- Order (for advance invoices) ---
 
-type Zamowienie struct {
-	WartoscZamowienia string             `xml:"WartoscZamowienia"`
-	ZamowienieWiersz  []ZamowienieWiersz `xml:"ZamowienieWiersz"`
+type Order struct {
+	TotalValue string      `xml:"WartoscZamowienia"`
+	Lines      []OrderLine `xml:"ZamowienieWiersz"`
 }
 
-type ZamowienieWiersz struct {
-	NrWierszaZam int    `xml:"NrWierszaZam"`
-	UUIDZ        string `xml:"UU_IDZ,omitempty"`
-	P7Z          string `xml:"P_7Z,omitempty"`
-	IndeksZ      string `xml:"IndeksZ,omitempty"`
-	GTINZ        string `xml:"GTINZ,omitempty"`
-	PKWiUZ       string `xml:"PKWiUZ,omitempty"`
-	CNZ          string `xml:"CNZ,omitempty"`
-	PKOBZ        string `xml:"PKOBZ,omitempty"`
-	P8AZ         string `xml:"P_8AZ,omitempty"`
-	P8BZ         string `xml:"P_8BZ,omitempty"`
-	P9AZ         string `xml:"P_9AZ,omitempty"`
-	P11NettoZ    string `xml:"P_11NettoZ,omitempty"`
-	P11VatZ      string `xml:"P_11VatZ,omitempty"`
-	P12Z         string `xml:"P_12Z,omitempty"`
-	P12ZXII      string `xml:"P_12Z_XII,omitempty"`
-	P12ZZal15    *int   `xml:"P_12Z_Zal_15,omitempty"`
-	GTUZ         string `xml:"GTUZ,omitempty"`
-	ProceduraZ   string `xml:"ProceduraZ,omitempty"`
-	KwotaAkcyzyZ string `xml:"KwotaAkcyzyZ,omitempty"`
-	StanPrzedZ   *int   `xml:"StanPrzedZ,omitempty"`
+type OrderLine struct {
+	LineNumber     int    `xml:"NrWierszaZam"`
+	UUIDZ          string `xml:"UU_IDZ,omitempty"`
+	P7Z            string `xml:"P_7Z,omitempty"`
+	IndexZ         string `xml:"IndeksZ,omitempty"`
+	GTINZ          string `xml:"GTINZ,omitempty"`
+	PKWiUZ         string `xml:"PKWiUZ,omitempty"`
+	CNZ            string `xml:"CNZ,omitempty"`
+	PKOBZ          string `xml:"PKOBZ,omitempty"`
+	P8AZ           string `xml:"P_8AZ,omitempty"`
+	P8BZ           string `xml:"P_8BZ,omitempty"`
+	P9AZ           string `xml:"P_9AZ,omitempty"`
+	P11NettoZ      string `xml:"P_11NettoZ,omitempty"`
+	P11VatZ        string `xml:"P_11VatZ,omitempty"`
+	P12Z           string `xml:"P_12Z,omitempty"`
+	P12ZXII        string `xml:"P_12Z_XII,omitempty"`
+	P12ZZal15      *int   `xml:"P_12Z_Zal_15,omitempty"`
+	GTUZ           string `xml:"GTUZ,omitempty"`
+	ProcedureZ     string `xml:"ProceduraZ,omitempty"`
+	ExciseTaxZ     string `xml:"KwotaAkcyzyZ,omitempty"`
+	PreviousStateZ *int   `xml:"StanPrzedZ,omitempty"`
 }
 
 // --- Footer ---
 
-type Stopka struct {
-	Informacje []Informacje `xml:"Informacje,omitempty"`
-	Rejestry   []Rejestr    `xml:"Rejestry,omitempty"`
+type Footer struct {
+	Info       []FooterInfo `xml:"Informacje,omitempty"`
+	Registries []Registry   `xml:"Rejestry,omitempty"`
 }
 
-type Informacje struct {
-	StopkaFaktury string `xml:"StopkaFaktury,omitempty"`
+type FooterInfo struct {
+	Text string `xml:"StopkaFaktury,omitempty"`
 }
 
-type Rejestr struct {
-	PelnaNazwa string `xml:"PelnaNazwa,omitempty"`
-	KRS        string `xml:"KRS,omitempty"`
-	REGON      string `xml:"REGON,omitempty"`
-	BDO        string `xml:"BDO,omitempty"`
+type Registry struct {
+	FullName string `xml:"PelnaNazwa,omitempty"`
+	KRS      string `xml:"KRS,omitempty"`
+	REGON    string `xml:"REGON,omitempty"`
+	BDO      string `xml:"BDO,omitempty"`
 }
 
 // --- Attachment ---
 
-type Zalacznik struct {
-	BlokDanych []BlokDanych `xml:"BlokDanych"`
+type Attachment struct {
+	DataBlocks []DataBlock `xml:"BlokDanych"`
 }
 
-type BlokDanych struct {
-	ZNaglowek string          `xml:"ZNaglowek,omitempty"`
-	MetaDane  []MetaDane      `xml:"MetaDane"`
-	Tekst     *ZalacznikTekst `xml:"Tekst,omitempty"`
-	Tabela    []Tabela        `xml:"Tabela,omitempty"`
+type DataBlock struct {
+	Header   string          `xml:"ZNaglowek,omitempty"`
+	Metadata []Metadata      `xml:"MetaDane"`
+	Text     *AttachmentText `xml:"Tekst,omitempty"`
+	Tables   []Table         `xml:"Tabela,omitempty"`
 }
 
-type MetaDane struct {
-	ZKlucz   string `xml:"ZKlucz"`
-	ZWartosc string `xml:"ZWartosc"`
+type Metadata struct {
+	Key   string `xml:"ZKlucz"`
+	Value string `xml:"ZWartosc"`
 }
 
-type ZalacznikTekst struct {
-	Akapit []string `xml:"Akapit"`
+type AttachmentText struct {
+	Paragraphs []string `xml:"Akapit"`
 }
 
-type Tabela struct {
-	TMetaDane []TMetaDane    `xml:"TMetaDane,omitempty"`
-	Opis      string         `xml:"Opis,omitempty"`
-	TNaglowek TabelaNaglowek `xml:"TNaglowek"`
-	Wiersz    []TabelaWiersz `xml:"Wiersz"`
-	Suma      *TabelaSuma    `xml:"Suma,omitempty"`
+type Table struct {
+	Metadata []TableMetadata `xml:"TMetaDane,omitempty"`
+	Desc     string          `xml:"Opis,omitempty"`
+	Header   TableHeader     `xml:"TNaglowek"`
+	Rows     []TableRow      `xml:"Wiersz"`
+	Sum      *TableSum       `xml:"Suma,omitempty"`
 }
 
-type TMetaDane struct {
-	TKlucz   string `xml:"TKlucz"`
-	TWartosc string `xml:"TWartosc"`
+type TableMetadata struct {
+	Key   string `xml:"TKlucz"`
+	Value string `xml:"TWartosc"`
 }
 
-type TabelaNaglowek struct {
-	Kol []TabelaKol `xml:"Kol"`
+type TableHeader struct {
+	Columns []TableColumn `xml:"Kol"`
 }
 
-type TabelaKol struct {
-	Typ  string `xml:"Typ,attr"`
-	NKom string `xml:"NKom"`
+type TableColumn struct {
+	Type string `xml:"Typ,attr"`
+	Name string `xml:"NKom"`
 }
 
-type TabelaWiersz struct {
-	WKom []string `xml:"WKom"`
+type TableRow struct {
+	Cells []string `xml:"WKom"`
 }
 
-type TabelaSuma struct {
-	SKom []string `xml:"SKom"`
+type TableSum struct {
+	Cells []string `xml:"SKom"`
 }
