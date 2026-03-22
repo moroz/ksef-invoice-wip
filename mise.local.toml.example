@@ -1,0 +1,9 @@
+[settings]
+env_shell_expand = false
+
+[env]
+NIP_NUMBER = ""
+KSEF_ENV = "Testing"
+AUTHENTICATION_CERT_PATH = "{{config_root}}/../TestEnv-Cert.crt"
+AUTHENTICATION_PRIV_KEY_PATH = "{{config_root}}/../TestEnv-Cert.key"
+AUTHENTICATION_PRIV_KEY_PASSPHRASE = ""

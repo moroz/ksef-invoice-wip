@@ -10,24 +10,31 @@ import (
 func main() {
 	key, err := certs.LoadKSeFPrivateKey(config.AuthenticationPrivKeyPath, config.AuthenticationPrivKeyPassphrase)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Load private key:", err)
 	}
 
 	der, err := certs.LoadKSeFCertificate(config.AuthenticationCertPath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Load authentication certificate:", err)
 	}
 
-	client, err := ksef.NewClient(ksef.EnvironmentProd, config.NipNumber, der, key)
+	client, err := ksef.NewClient(ksef.EnvironmentTest, config.NipNumber, der, key)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Initialize client:", err)
 	}
 
 	if err := client.Authenticate(); err != nil {
-		log.Fatal(err)
+		log.Fatal("Authenticate:", err)
 	}
 
 	if client.Authenticated() {
 		log.Print("Authenticated!")
 	}
+
+	session, err := client.OpenInteractiveSession()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("%#v", session)
 }

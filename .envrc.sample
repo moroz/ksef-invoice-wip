@@ -1,4 +1,0 @@
-export NIP_NUMBER="8976111986"
-export AUTHENTICATION_CERT_PATH="$(realpath ../Testing.crt)"
-export AUTHENTICATION_PRIV_KEY_PATH="$(realpath ../Testing.key)"
-export AUTHENTICATION_PRIV_KEY_PASSPHRASE="hunter2"

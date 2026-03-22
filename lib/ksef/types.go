@@ -67,3 +67,8 @@ type OpenInteractiveSessionRequestEncryption struct {
 	EncryptedSymmetricKey []byte `json:"encryptedSymmetricKey"`
 	InitializationVector  []byte `json:"initializationVector"`
 }
+
+type OpenInteractiveSessionResponse struct {
+	ReferenceNumber string    `json:"referenceNumber"`
+	ValidUntil      time.Time `json:"validUntil"`
+}

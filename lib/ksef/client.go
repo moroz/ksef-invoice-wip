@@ -14,8 +14,8 @@ import (
 )
 
 type Client struct {
+	*EnvironmentConfig
 	env                   Environment
-	baseUrl               string
 	certDer               []byte
 	privKey               *ecdsa.PrivateKey
 	nip                   string
@@ -27,16 +27,12 @@ type Client struct {
 func NewClient(env Environment, nip string, certDer []byte, key *ecdsa.PrivateKey) (*Client, error) {
 	client := &Client{certDer: certDer, privKey: key, nip: nip, env: env}
 
-	switch env {
-	case EnvironmentTest:
-		client.baseUrl = BaseurlTest
-	case EnvironmentPreprod:
-		client.baseUrl = BaseurlPreprod
-	case EnvironmentProd:
-		client.baseUrl = BaseurlProd
-	default:
+	config, ok := EnvironmentConfigs[env]
+	if !ok {
 		return nil, fmt.Errorf("unknown environment %v", env)
 	}
+
+	client.EnvironmentConfig = &config
 
 	return client, nil
 }
@@ -80,7 +76,7 @@ func (c *Client) Authenticate() (err error) {
 }
 
 func (c *Client) GetAuthChallenge() (*AuthChallengeResult, error) {
-	req, err := http.NewRequest("POST", c.baseUrl+GetAuthEndpoint, nil)
+	req, err := http.NewRequest("POST", c.BaseUrl+GetAuthEndpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +92,7 @@ func (c *Client) GetAuthChallenge() (*AuthChallengeResult, error) {
 }
 
 func (c *Client) CheckAuthenticationStatus(ref, token string) (*CheckAuthenticationStatusResponse, error) {
-	url := c.baseUrl + strings.ReplaceAll(CheckAuthenticationStatusEndpoint, "{ref}", ref)
+	url := c.BaseUrl + strings.ReplaceAll(CheckAuthenticationStatusEndpoint, "{ref}", ref)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -130,7 +126,7 @@ func (c *Client) AwaitAuthorization(ref, token string) (err error) {
 }
 
 func (c *Client) RedeemAuthToken(bearer string) (*RedeemAuthTokenResponse, error) {
-	req, err := http.NewRequest("POST", c.baseUrl+RedeemAuthTokenEndpoint, nil)
+	req, err := http.NewRequest("POST", c.BaseUrl+RedeemAuthTokenEndpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +160,7 @@ func BuildAuthTokenRequestFromChallenge(challenge *AuthChallengeResult, nip stri
 
 func (c *Client) SubmitAuthXAdESSignature(xmlBytes []byte) (*SubmitAuthXAdESSignatureResponse, error) {
 	body := bytes.NewBuffer(xmlBytes)
-	req, err := http.NewRequest("POST", c.baseUrl+SubmitAuthXAdESSignatureEndpoint, body)
+	req, err := http.NewRequest("POST", c.BaseUrl+SubmitAuthXAdESSignatureEndpoint, body)
 	if err != nil {
 		return nil, err
 	}
